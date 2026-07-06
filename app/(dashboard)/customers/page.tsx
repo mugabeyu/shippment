@@ -1,0 +1,244 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCustomers, type Customer } from '@/lib/swr';
+import { Plus, Search, Phone, Mail, MapPin, X, Edit2, Trash2 } from 'lucide-react';
+
+export default function Customers() {
+  const router = useRouter();
+  const { customers, loading, error, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [draft, setDraft] = useState<Customer>({
+    id: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    notes: '',
+    totalKgSent: 0,
+    photo: ''
+  });
+
+  const openNew = () => {
+    setDraft({ id: '', name: '', phone: '', email: '', address: '', notes: '', totalKgSent: 0, photo: '' });
+    setIsModalOpen(true);
+  };
+  const openEdit = (customer: Customer) => {
+    setDraft(customer);
+    setIsModalOpen(true);
+  };
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (draft.id) {
+      await updateCustomer(draft.id, draft);
+    } else {
+      await addCustomer({ ...draft, totalKgSent: 0, photo: '' });
+    }
+    setIsModalOpen(false);
+  };
+  const filteredCustomers = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phone.includes(searchTerm)
+  );
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-slate-500">Loading customers...</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-600 rounded-lg p-4">
+          Failed to load customers: {error}
+        </div>
+      )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-lg font-semibold text-navy-900">Customers</h1>
+        <button
+          onClick={openNew}
+          className="btn-primary">
+          <Plus className="w-5 h-5 mr-2" />
+          Add Customer
+        </button>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="p-4 border-b border-slate-200">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+          {filteredCustomers.map((customer) =>
+            <div
+              key={customer.id}
+              onClick={() => router.push(`/customers/${customer.id}`)}
+              className="card p-5 hover:border-slate-300 cursor-pointer">
+
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                      <span className="text-sm font-bold text-amber-500">
+                        {customer.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                      </span>
+                    </div>
+                    <div>
+                    <h3 className="text-base font-semibold text-navy-900">{customer.name}</h3>
+                    <div className="text-sm text-amber-500 font-medium mt-1">
+                      Loyalty: {customer.totalKgSent} kg sent
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEdit(customer); }}
+                    aria-label={`Edit ${customer.name}`}
+                    className="p-1.5 text-slate-500 hover:text-navy-900 transition-colors">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteCustomer(customer.id); }}
+                    aria-label={`Delete ${customer.name}`}
+                    className="p-1.5 text-slate-500 hover:text-red-500 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm text-slate-600">
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 mr-3 text-slate-400" />
+                  {customer.phone}
+                </div>
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 mr-3 text-slate-400" />
+                  {customer.email || 'No email provided'}
+                </div>
+                <div className="flex items-start">
+                  <MapPin className="w-4 h-4 mr-3 mt-0.5 text-slate-400 shrink-0" />
+                  <span className="line-clamp-2">{customer.address}</span>
+                </div>
+              </div>
+
+              {customer.notes &&
+                <div className="mt-4 pt-4 border-t border-slate-200 text-xs text-slate-500">
+                  <span className="font-medium text-slate-600">Notes:</span>{' '}
+                  {customer.notes}
+                </div>
+              }
+            </div>
+          )}
+        </div>
+
+        {filteredCustomers.length === 0 &&
+          <div className="p-8 text-center text-slate-500">
+            No customers found.
+          </div>
+        }
+      </div>
+
+      {isModalOpen &&
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-navy-900">
+                {draft.id ? 'Edit Customer' : 'Add New Customer'}
+              </h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-500 hover:text-navy-900 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddCustomer} className="p-5 space-y-5">
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Full Name</label>
+                <input
+                  required
+                  type="text"
+                  value={draft.name}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      name: e.target.value
+                    })
+                  }
+                  className="input-field" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Phone Number (Loyalty ID)</label>
+                <input
+                  required
+                  type="tel"
+                  placeholder="+230 547 355 38"
+                  value={draft.phone}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      phone: e.target.value
+                    })
+                  }
+                  className="input-field" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={draft.email}
+                  onChange={(e) =>
+                    setDraft({ ...draft, email: e.target.value })
+                  }
+                  className="input-field"
+                  placeholder="customer@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Address</label>
+                <textarea
+                  rows={2}
+                  value={draft.address}
+                  onChange={(e) =>
+                    setDraft({ ...draft, address: e.target.value })
+                  }
+                  className="input-field resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Notes</label>
+                <textarea
+                  rows={2}
+                  value={draft.notes}
+                  onChange={(e) =>
+                    setDraft({ ...draft, notes: e.target.value })
+                  }
+                  className="input-field resize-none" />
+              </div>
+              <div className="pt-4 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-slate-500 hover:text-navy-900 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary">
+                  {draft.id ? 'Save Changes' : 'Save Customer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+    </div>
+  );
+}
