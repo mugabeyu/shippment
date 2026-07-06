@@ -49,7 +49,8 @@ export default function Settings() {
       address: draft.address,
       currency: draft.currency,
       defaultRatePerKg: draft.defaultRatePerKg,
-      paymentMethods: draft.paymentMethods
+      paymentMethods: draft.paymentMethods,
+      routes: draft.routes
     });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);

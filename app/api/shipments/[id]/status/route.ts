@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .select('*, customer:customers(*)')
       .single();
     if (error) throw error;
+    logAudit(req, 'shipment_status_changed', {
+      trackingNumber: data.tracking_number,
+      status
+    });
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

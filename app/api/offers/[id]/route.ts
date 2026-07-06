@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
 const supabase = () => getServiceSupabase();
+
+const mapOffer = (row: any) => ({
+  id: row.id,
+  name: row.name,
+  targetKg: row.target_kg ?? 0,
+  rewardKg: row.reward_kg ?? 0,
+  discountPercent: row.discount_percent ?? 0,
+  discountAmount: row.discount_amount ?? 0,
+  active: row.active ?? false,
+  createdAt: row.created_at
+});
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .eq('id', id)
       .single();
     if (error) throw error;
-    return NextResponse.json(data);
+    return NextResponse.json(mapOffer(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -31,7 +43,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .select()
       .single();
     if (error) throw error;
-    return NextResponse.json(data);
+    logAudit(req, 'offer_updated', { id, name, active });
+    return NextResponse.json(mapOffer(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -45,6 +58,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .delete()
       .eq('id', id);
     if (error) throw error;
+    logAudit(req, 'offer_deleted', { id });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

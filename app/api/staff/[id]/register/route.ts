@@ -28,13 +28,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'This invitation has already been accepted' }, { status: 400 });
     }
 
-    const { data: authData, error: authError } = await adminSupabase().auth.admin.createUser({
-      email: staff.email,
-      password,
-      email_confirm: true,
-      user_metadata: { name, phone, role: staff.role, staffId: staff.id }
-    });
-    if (authError) throw authError;
+    const userMetadata = { name, phone, role: staff.role, staffId: staff.id };
+
+    // The invitation email (inviteUserByEmail) already created the auth user and
+    // stored its id on the staff row. Reuse it so the staff member ends up with a
+    // working email + password to log in, instead of failing on a duplicate email.
+    let authUserId: string;
+    if (staff.auth_uid) {
+      const { data: updatedUser, error: updateError } = await adminSupabase()
+        .auth.admin.updateUserById(staff.auth_uid, {
+          password,
+          email_confirm: true,
+          user_metadata: userMetadata
+        });
+      if (updateError) throw updateError;
+      authUserId = updatedUser.user.id;
+    } else {
+      const { data: authData, error: authError } = await adminSupabase().auth.admin.createUser({
+        email: staff.email,
+        password,
+        email_confirm: true,
+        user_metadata: userMetadata
+      });
+      if (authError) throw authError;
+      authUserId = authData.user.id;
+    }
 
     const { data: updated, error: updateError } = await supabase()
       .from('staff')
@@ -43,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         phone,
         photo: photo || '',
         active: true,
-        auth_uid: authData.user.id,
+        auth_uid: authUserId,
         updated_at: new Date()
       })
       .eq('id', id)

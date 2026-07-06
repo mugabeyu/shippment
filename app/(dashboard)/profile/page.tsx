@@ -62,8 +62,13 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!staff) return;
-    await api.updateStaff(staff.id, { name: formData.name, email: formData.email });
-    setActiveStaff(formData.name, formData.email);
+    const updated = await api.updateStaff(staff.id, {
+      name: formData.name,
+      phone: formData.phone,
+      department: formData.department,
+      photo: formData.photo
+    });
+    setActiveStaff(formData.name, formData.email, updated?.photo ?? formData.photo);
     setIsEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -96,16 +101,18 @@ export default function Profile() {
                 <User className="w-10 h-10 text-slate-400" />
               )}
             </div>
-            <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-700 transition-colors shadow-md">
-              <Camera className="w-4 h-4" />
-              <input type="file" accept="image/*" onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => setFormData({ ...formData, photo: reader.result as string });
-                reader.readAsDataURL(file);
-              }} className="hidden" />
-            </label>
+            {isEditing && (
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-700 transition-colors shadow-md">
+                <Camera className="w-4 h-4" />
+                <input type="file" accept="image/*" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => setFormData({ ...formData, photo: reader.result as string });
+                  reader.readAsDataURL(file);
+                }} className="hidden" />
+              </label>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-4">
@@ -148,7 +155,7 @@ export default function Profile() {
             </div>
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Email</label>
-              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-field" />
+              <input type="email" value={formData.email} readOnly disabled className="input-field bg-slate-100 text-slate-500 cursor-not-allowed" />
             </div>
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Phone</label>

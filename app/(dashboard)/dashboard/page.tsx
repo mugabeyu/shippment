@@ -32,15 +32,24 @@ export default function Dashboard() {
   const topCustomers = [...customers].sort((a, b) => b.totalKgSent - a.totalKgSent).slice(0, 5);
   const closeToBonus = customers.map((c) => ({ ...c, remaining: target - c.totalKgSent % target })).sort((a, b) => a.remaining - b.remaining).slice(0, 5);
   const monthly = useMemo(() => {
-    const monthData: Record<string, number> = {};
+    const now = new Date();
+    const buckets: { key: string; name: string; kg: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        name: d.toLocaleString('en-US', { month: 'short' }),
+        kg: 0
+      });
+    }
+    const byKey = new Map(buckets.map((b) => [b.key, b]));
     shipments.forEach((s) => {
       const d = new Date(s.date);
-      const month = d.toLocaleString('en', { month: 'short' });
-      monthData[month] = (monthData[month] || 0) + s.weightKg;
+      if (isNaN(d.getTime())) return;
+      const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`);
+      if (bucket) bucket.kg += s.weightKg;
     });
-    return Object.entries(monthData)
-      .map(([name, kg]) => ({ name, kg }))
-      .slice(-7);
+    return buckets.map(({ name, kg }) => ({ name, kg }));
   }, [shipments]);
 
   return (

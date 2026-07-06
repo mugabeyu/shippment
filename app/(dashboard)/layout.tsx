@@ -19,16 +19,38 @@ import {
   User,
   FileSearch,
   AlertTriangle,
-  UserPlus } from
+  UserPlus,
+  Bell,
+  Star,
+  Receipt,
+  Truck } from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { useAppConfig } from '@/lib/swr';
+import { supabase } from '@/lib/supabase/client';
 
 const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   LayoutDashboard, Users, Package, Tags, Gift, BarChart3, Settings, UserPlus, FileText, FileSearch,
-  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle
+  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Star, Receipt, Truck
 };
+
+// Default navigation shown when app_config has no `navigation` entry yet.
+// Keeps the sidebar usable out-of-the-box; overridden by DB config when present.
+const DEFAULT_NAV: NavItem[] = [
+  { path: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
+  { path: '/shipments', label: 'Shipments', icon: 'Truck' },
+  { path: '/customers', label: 'Customers', icon: 'Users' },
+  { path: '/categories', label: 'Categories', icon: 'Tags' },
+  { path: '/offers', label: 'Offers', icon: 'Gift' },
+  { path: '/reports', label: 'Reports', icon: 'BarChart3' },
+  { path: '/notifications', label: 'Notifications', icon: 'Bell' },
+  { path: '/loyalty', label: 'Loyalty', icon: 'Star' },
+  { path: '/receipts', label: 'Receipts', icon: 'Receipt' },
+  { path: '/audit', label: 'Audit Logs', icon: 'FileSearch' },
+  { path: '/settings', label: 'Settings', icon: 'Settings' },
+  { path: '/staff', label: 'Staff', icon: 'UserPlus' },
+];
 
 interface NavItem {
   path: string;
@@ -45,9 +67,9 @@ type ResolvedNavItem = NavItem & { component: React.ComponentType<{className?: s
 export default function DashboardLayout({ children }: LayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { sidebarOpen, setSidebarOpen, activeStaffName, activeStaffEmail } = useUiStore();
+  const { sidebarOpen, setSidebarOpen, activeStaffName, activeStaffEmail, activeStaffPhoto } = useUiStore();
   const { config, loading } = useAppConfig();
-  const navItems: ResolvedNavItem[] = (config?.navigation || [])
+  const navItems: ResolvedNavItem[] = ((config?.navigation && config.navigation.length ? config.navigation : DEFAULT_NAV) as NavItem[])
     .map((item: NavItem) => ({
       ...item,
       component: ICON_MAP[item.icon] || LayoutDashboard
@@ -65,9 +87,15 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   const profileRef = useRef<HTMLDivElement>(null);
 
-  useSessionTimeout(() => {
+  useSessionTimeout(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
     localStorage.removeItem('activeStaffName');
     localStorage.removeItem('activeStaffEmail');
+    localStorage.removeItem('activeStaffPhoto');
     router.push('/login');
   });
 
@@ -98,7 +126,15 @@ export default function DashboardLayout({ children }: LayoutProps) {
     }
   }, [isDarkMode]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore sign-out errors; still clear local state
+    }
+    localStorage.removeItem('activeStaffName');
+    localStorage.removeItem('activeStaffEmail');
+    localStorage.removeItem('activeStaffPhoto');
     router.push('/login');
   };
 
@@ -239,17 +275,30 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 onClick={() => setShowProfile(!showProfile)}
                 className="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-xs sm:text-sm">
-                  {activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-xs sm:text-sm overflow-hidden">
+                  {activeStaffPhoto ? (
+                    <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
+                  ) : (
+                    activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                  )}
                 </div>
                 <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 hidden sm:block" />
               </button>
               {showProfile && (
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                    <div className="text-sm font-semibold text-navy-900 dark:text-slate-100">{activeStaffName}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{activeStaffEmail}</div>
-                  </div>
+                   <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm overflow-hidden shrink-0">
+                       {activeStaffPhoto ? (
+                         <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
+                       ) : (
+                         activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                       )}
+                     </div>
+                     <div className="min-w-0">
+                       <div className="text-sm font-semibold text-navy-900 dark:text-slate-100 truncate">{activeStaffName}</div>
+                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{activeStaffEmail}</div>
+                     </div>
+                   </div>
                   <div className="py-2">
                     <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
                       <User className="w-4 h-4 mr-3 text-slate-400" /> Profile
@@ -286,7 +335,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
             </div>
             <div className="flex justify-end gap-3">
               <button onClick={() => { setSessionWarning(null); }} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white transition-colors">Dismiss</button>
-              <button onClick={() => { setSessionWarning(null); router.push('/login'); localStorage.removeItem('activeStaffName'); localStorage.removeItem('activeStaffEmail'); }} className="btn-primary">Logout Now</button>
+              <button onClick={async () => { setSessionWarning(null); await handleLogout(); }} className="btn-primary">Logout Now</button>
             </div>
           </div>
         </div>

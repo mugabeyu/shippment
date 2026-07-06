@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase, getAdminSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,13 +46,29 @@ export async function POST(req: NextRequest) {
       .single();
     if (staffError) throw staffError;
 
-    const { error: inviteError } = await adminSupabase().auth.admin.inviteUserByEmail(email, {
-      data: { role, staffId: staff.id }
+    const origin = req.headers.get('origin')
+      || (req.headers.get('referer')?.replace(/\/$/, '') ?? '')
+      || '';
+    const registerUrl = `${origin}/register?staffId=${staff.id}`;
+
+    const { data: inviteData, error: inviteError } = await adminSupabase().auth.admin.inviteUserByEmail(email, {
+      data: { role, staffId: staff.id },
+      redirectTo: registerUrl
     });
     if (inviteError) {
       await supabase().from('staff').delete().eq('id', staff.id);
       throw inviteError;
     }
+
+    // Persist the auth user id so registration can reuse (not duplicate) it.
+    if (inviteData?.user?.id) {
+      await supabase()
+        .from('staff')
+        .update({ auth_uid: inviteData.user.id, invited_at: new Date() })
+        .eq('id', staff.id);
+    }
+
+    logAudit(req, 'staff_invited', { email, role, staffId: staff.id });
 
     return NextResponse.json({ ...staff, message: 'Invitation sent successfully' }, { status: 201 });
   } catch (error: any) {

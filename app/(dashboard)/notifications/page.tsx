@@ -1,82 +1,120 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useNotifications, useAppConfig } from '@/lib/swr';
-import { Bell, CheckCheck, Trash2, Package, Users, Gift, Shield, Truck } from 'lucide-react';
+import { useAuditLogs, useAppConfig } from '@/lib/swr';
+import { Search, Filter, Activity as ActivityIcon, User, Clock } from 'lucide-react';
 
-const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
-  Package, Users, Gift, Shield, Truck, Bell
-};
+function formatAction(action: string) {
+  return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
 
-export default function Notifications() {
-  const { notifications, loading, error, unreadCount, markAllRead, deleteNotification } = useNotifications();
+function summarizeDetails(details: Record<string, any> | null) {
+  if (!details || Object.keys(details).length === 0) return '';
+  return Object.entries(details)
+    .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}: ${v}`)
+    .join(' · ');
+}
+
+export default function Activity() {
+  const { logs, loading, error } = useAuditLogs();
   const { config } = useAppConfig();
-  const notificationTypes = config?.notification_types || {};
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const actionColors = config?.audit_actions || {};
+  const [searchTerm, setSearchTerm] = useState('');
+  const [actionFilter, setActionFilter] = useState('');
 
-  const filtered = filter === 'unread' ? notifications.filter((n) => !n.read) : notifications;
+  // The audit API returns snake_case keys; support both in case of future mapping.
+  const staffName = (log: any) => log.staffName || log.staff_name || '';
+  const staffEmail = (log: any) => log.staffEmail || log.staff_email || '';
+  const createdAt = (log: any) => log.createdAt || log.created_at || '';
+  const action = (log: any) => log.action || '';
+  const details = (log: any) => log.details || null;
+
+  const filtered = logs.filter((log) => {
+    const matchesSearch = !searchTerm ||
+      staffName(log).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staffEmail(log).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      action(log).toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesAction = !actionFilter || action(log) === actionFilter;
+    return matchesSearch && matchesAction;
+  });
+
+  const uniqueActions = Array.from(new Set(logs.map((l) => action(l)))).sort();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading notifications...</div>;
+    return <div className="flex items-center justify-center h-64 text-slate-500">Loading activity...</div>;
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-navy-900">Notifications</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setFilter(filter === 'all' ? 'unread' : 'all')} className="px-3 py-2 text-sm font-medium text-navy-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            {filter === 'all' ? 'Show Unread' : 'Show All'}
-          </button>
-          {unreadCount > 0 && (
-            <button onClick={() => markAllRead()} className="flex items-center px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition-colors">
-              <CheckCheck className="w-4 h-4 mr-2" /> Mark all as read
-            </button>
-          )}
+          <h1 className="text-lg font-semibold text-navy-900">Activity</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Every action performed across the system, and who did it.</p>
         </div>
       </div>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-600 rounded-lg p-4">
-          Failed to load notifications: {error}
+          Failed to load activity: {error}
         </div>
       )}
 
       <div className="card overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by staff name, email or action..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
+          </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <select
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="input-field pl-10 pr-8"
+            >
+              <option value="">All Actions</option>
+              {uniqueActions.map((a) => <option key={a} value={a}>{formatAction(a)}</option>)}
+            </select>
+          </div>
+        </div>
+
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">No notifications to display.</div>
+          <div className="p-8 text-center text-slate-500">No activity to display.</div>
         ) : (
           <div className="divide-y divide-slate-200">
-             {filtered.map((notification) => {
-               const typeConfig = notificationTypes[notification.type] || {};
-               const Icon = ICON_MAP[typeConfig.icon] || Bell;
-               const color = typeConfig.color || 'bg-slate-100 text-slate-700';
-               return (
-                 <div key={notification.id} className={`flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}>
-                   <div className={`p-2.5 rounded-lg shrink-0 ${color}`}>
-                     <Icon className="w-5 h-5" />
-                   </div>
-                   <div className="flex-1 min-w-0">
-                     <div className="flex items-center justify-between mb-1">
-                       <h3 className="text-sm font-semibold text-navy-900">{notification.title}</h3>
-                       <button onClick={() => deleteNotification(notification.id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors" title="Delete">
-                         <Trash2 className="w-4 h-4" />
-                       </button>
-                     </div>
-                     <p className="text-sm text-slate-600 leading-relaxed">{notification.message}</p>
-                     <p className="text-xs text-slate-400 mt-1.5">{new Date(notification.createdAt || '').toLocaleString()}</p>
-                   </div>
-                   {!notification.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2"></span>}
-                 </div>
-               );
-             })}
+            {filtered.map((log) => (
+              <div key={log.id || createdAt(log)} className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
+                <div className={`p-2.5 rounded-lg shrink-0 ${actionColors[action(log)] || 'bg-slate-100 text-slate-700'}`}>
+                  <ActivityIcon className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <h3 className="text-sm font-semibold text-navy-900">{formatAction(action(log))}</h3>
+                    <span className="flex items-center text-xs text-slate-400 shrink-0">
+                      <Clock className="w-3.5 h-3.5 mr-1" />
+                      {createdAt(log) ? new Date(createdAt(log)).toLocaleString() : '—'}
+                    </span>
+                  </div>
+                  {summarizeDetails(details(log)) && (
+                    <p className="text-sm text-slate-600 leading-relaxed">{summarizeDetails(details(log))}</p>
+                  )}
+                  <div className="flex items-center mt-1.5 text-xs text-slate-500">
+                    <User className="w-3.5 h-3.5 mr-1.5" />
+                    <span className="font-medium text-slate-700">{staffName(log) || 'System'}</span>
+                    {staffEmail(log) && <span className="ml-1">({staffEmail(log)})</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
     </div>
   );
 }
-

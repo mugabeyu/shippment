@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,17 +10,27 @@ export async function GET() {
   try {
     const { data, error } = await supabase()
       .from('settings')
-      .select('*, routes:routes(*)')
-      .limit(1)
-      .single();
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1);
     if (error) throw error;
+    if (!data || data.length === 0) {
+      return NextResponse.json({
+        paymentMethods: [],
+        routes: [],
+        loyaltyEnabled: true,
+        taxEnabled: false,
+        taxRate: 0
+      });
+    }
+    const row = data[0];
     return NextResponse.json({
-      ...data,
-      paymentMethods: data.payment_methods || [],
-      routes: data.routes || [],
-      loyaltyEnabled: data.loyalty_enabled ?? true,
-      taxEnabled: data.tax_enabled ?? false,
-      taxRate: data.tax_rate ?? 0
+      ...row,
+      paymentMethods: row.payment_methods || [],
+      routes: row.routes || [],
+      loyaltyEnabled: row.loyalty_enabled ?? true,
+      taxEnabled: row.tax_enabled ?? false,
+      taxRate: row.tax_rate ?? 0
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,12 +39,14 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { companyName, contactEmail, phone, address, currency, defaultRatePerKg, paymentMethods, loyaltyEnabled, taxEnabled, taxRate } = await req.json();
-    const { data: existing } = await supabase()
+    const { companyName, contactEmail, phone, address, currency, defaultRatePerKg, paymentMethods, loyaltyEnabled, taxEnabled, taxRate, routes } = await req.json();
+    const { data: existingRows, error: lookupError } = await supabase()
       .from('settings')
       .select('id')
-      .limit(1)
-      .single();
+      .order('created_at', { ascending: true })
+      .limit(1);
+    if (lookupError) throw lookupError;
+    const existing = existingRows && existingRows[0];
 
     let data, error;
     if (existing) {
@@ -47,6 +60,7 @@ export async function PUT(req: NextRequest) {
           currency,
           default_rate_per_kg: defaultRatePerKg,
           payment_methods: paymentMethods,
+          routes: routes ?? [],
           loyalty_enabled: loyaltyEnabled,
           tax_enabled: taxEnabled,
           tax_rate: taxRate,
@@ -54,7 +68,8 @@ export async function PUT(req: NextRequest) {
         })
         .eq('id', existing.id)
         .select()
-        .single());
+        .limit(1));
+      data = data?.[0];
     } else {
       ({ data, error } = await supabase()
         .from('settings')
@@ -66,16 +81,19 @@ export async function PUT(req: NextRequest) {
           currency,
           default_rate_per_kg: defaultRatePerKg,
           payment_methods: paymentMethods,
+          routes: routes ?? [],
           loyalty_enabled: loyaltyEnabled,
           tax_enabled: taxEnabled,
           tax_rate: taxRate
         }])
         .select()
-        .single());
+        .limit(1));
+      data = data?.[0];
     }
 
     if (error) throw error;
-    return NextResponse.json({ ...data, paymentMethods: data.payment_methods });
+    logAudit(req, existing ? 'settings_updated' : 'settings_created', { companyName });
+    return NextResponse.json({ ...data, paymentMethods: data.payment_methods, routes: data.routes });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

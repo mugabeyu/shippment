@@ -136,19 +136,28 @@ interface UiState {
   sidebarOpen: boolean;
   activeStaffName: string;
   activeStaffEmail: string;
+  activeStaffPhoto: string;
   setSidebarOpen: (open: boolean) => void;
-  setActiveStaff: (name: string, email: string) => void;
+  setActiveStaff: (name: string, email: string, photo?: string) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
   sidebarOpen: false,
   activeStaffName: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffName') || '') : '',
   activeStaffEmail: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffEmail') || '') : '',
+  activeStaffPhoto: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffPhoto') || '') : '',
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setActiveStaff: (name, email) => {
+  setActiveStaff: (name, email, photo) => {
+    if (photo !== undefined) {
+      localStorage.setItem('activeStaffPhoto', photo);
+    }
     localStorage.setItem('activeStaffName', name);
     localStorage.setItem('activeStaffEmail', email);
-    set({ activeStaffName: name, activeStaffEmail: email });
+    set({
+      activeStaffName: name,
+      activeStaffEmail: email,
+      ...(photo !== undefined ? { activeStaffPhoto: photo } : {})
+    });
   }
 }));
 

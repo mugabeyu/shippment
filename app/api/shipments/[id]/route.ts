@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (error) throw error;
 
+    logAudit(req, 'shipment_updated', {
+      trackingNumber: data.tracking_number,
+      customerId,
+      status,
+      changes: Object.keys(body)
+    });
+
     if (oldShipment && customerId !== oldShipment.customer_id) {
       const { data: oldCustomer } = await supabase()
         .from('customers')
@@ -102,7 +110,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const { id } = await params;
     const { data: shipment } = await supabase()
       .from('shipments')
-      .select('weight_kg, customer_id')
+      .select('tracking_number, weight_kg, customer_id')
       .eq('id', id)
       .single();
 
@@ -112,6 +120,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .eq('id', id);
 
     if (error) throw error;
+
+    logAudit(req, 'shipment_deleted', {
+      trackingNumber: shipment?.tracking_number,
+      customerId: shipment?.customer_id,
+      weightKg: shipment?.weight_kg
+    });
 
     if (shipment) {
       const { data: customer } = await supabase()

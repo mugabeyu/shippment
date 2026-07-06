@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,16 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (shipmentError) throw shipmentError;
+
+    logAudit(req, 'shipment_created', {
+      trackingNumber: shipment.tracking_number,
+      customerId,
+      origin,
+      destination,
+      status: shipment.status,
+      weightKg,
+      quantity
+    });
 
     const { data: customer } = await supabase()
       .from('customers')

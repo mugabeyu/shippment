@@ -1,5 +1,20 @@
 const API_BASE = '/api';
 
+function toCamelCase(str: string): string {
+  return str.replace(/[_-]+([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+}
+
+/** Recursively converts object keys from snake_case to camelCase. */
+function camelizeKeys(value: any): any {
+  if (Array.isArray(value)) return value.map(camelizeKeys);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [toCamelCase(k), camelizeKeys(v)])
+    );
+  }
+  return value;
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -20,7 +35,7 @@ async function request<T>(
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
-  return response.json();
+  return camelizeKeys(await response.json());
 }
 
 export const api = {

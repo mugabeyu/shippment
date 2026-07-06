@@ -153,8 +153,8 @@ export default function Shipments() {
   const filteredShipments = shipments.filter((s) => {
     const customer = customers.find((c) => c.id === s.customerId);
     const matchesSearch =
-      s.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (s.trackingNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -337,15 +337,16 @@ export default function Shipments() {
       </div>
 
       {isNewModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setIsNewModalOpen(false)}>
-          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-2xl my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setIsNewModalOpen(false)}>
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 shrink-0">
               <h2 className="text-lg font-semibold text-navy-900">Create New Shipment</h2>
               <button onClick={() => { setIsNewModalOpen(false); }} aria-label="Close" className="text-slate-500 hover:text-navy-900 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddShipment} className="p-5 space-y-5">
+            <form onSubmit={handleAddShipment} className="flex flex-col flex-1 min-h-0">
+              <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <Field label="Customer">
                   <div className="relative">
@@ -490,7 +491,8 @@ export default function Shipments() {
                   </div>
                 </div>
               </div>
-              <div className="pt-4 flex justify-end space-x-3 border-t border-slate-200">
+              </div>
+              <div className="pt-4 px-5 pb-5 flex justify-end space-x-3 border-t border-slate-200 shrink-0">
                 <button type="button" onClick={() => { setIsNewModalOpen(false); }} className="px-4 py-2 text-slate-500 hover:text-navy-900 transition-colors">Cancel</button>
                 <button type="submit" className="btn-primary" disabled={uploadingPhotos}>Create Shipment</button>
               </div>

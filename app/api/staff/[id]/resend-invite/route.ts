@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const { data: staff, error: staffError } = await supabase()
       .from('staff')
-      .select('email, active')
+      .select('email, active, auth_uid')
       .eq('id', id)
       .single();
     if (staffError || !staff) {
@@ -20,10 +20,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (staff.active) {
       return NextResponse.json({ error: 'Staff member is already active' }, { status: 400 });
     }
-    const { error: inviteError } = await adminSupabase().auth.admin.inviteUserByEmail(staff.email, {
-      data: { staffId: id }
+
+    const origin = req.headers.get('origin')
+      || (req.headers.get('referer')?.replace(/\/$/, '') ?? '')
+      || '';
+    const registerUrl = `${origin}/register?staffId=${id}`;
+
+    const { data: inviteData, error: inviteError } = await adminSupabase().auth.admin.inviteUserByEmail(staff.email, {
+      data: { staffId: id },
+      redirectTo: registerUrl
     });
     if (inviteError) throw inviteError;
+
+    if (inviteData?.user?.id && !staff.auth_uid) {
+      await supabase()
+        .from('staff')
+        .update({ auth_uid: inviteData.user.id, invited_at: new Date() })
+        .eq('id', id);
+    }
+
     return NextResponse.json({ message: 'Invitation resent successfully' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

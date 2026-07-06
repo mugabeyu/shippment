@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Ship, Lock, User, Phone, Camera, CheckCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAppConfig } from '@/lib/swr';
+import { supabase } from '@/lib/supabase/client';
 
 type StaffInvite = {
   id: string;
@@ -25,6 +26,8 @@ function StaffRegisterInner() {
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
@@ -41,15 +44,30 @@ function StaffRegisterInner() {
       return;
     }
 
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setSessionLoading(false);
+    });
+
     api.getStaffMember(staffId)
       .then((data) => {
         setStaff(data);
         if (data.name) setFormData((f) => ({ ...f, name: data.name }));
         if (data.phone) setFormData((f) => ({ ...f, phone: data.phone }));
       })
-      .catch(() => setError('Invitation not found or has expired.'))
+      .catch(() => setError('This invitation link is invalid or has expired. Please ask your administrator to send a new invitation.'))
       .finally(() => setVerifying(false));
   }, [staffId]);
+
+  // When the staff member arrives from the invitation email, they have already
+  // set their password on Supabase's page and now have a session. In that case
+  // we only need them to finish their profile (name + phone) to log in.
+  const cameFromEmail = Boolean(
+    session?.user &&
+    staff?.email &&
+    session.user.email === staff.email &&
+    !staff.active
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +76,27 @@ function StaffRegisterInner() {
 
     try {
       if (!staffId) throw new Error('Missing invitation');
-      if (!formData.name || !formData.phone || !formData.password) {
+      if (!formData.name || !formData.phone) {
         throw new Error('Please fill in all required fields');
+      }
+
+      if (cameFromEmail) {
+        // Password was already set via the invitation email; just finish profile.
+        await api.completeStaffProfile(staffId, {
+          name: formData.name,
+          phone: formData.phone,
+          photo: formData.photo,
+          authUid: session.user.id
+        });
+        localStorage.setItem('activeStaffName', formData.name);
+        localStorage.setItem('activeStaffEmail', staff?.email || '');
+        localStorage.setItem('activeStaffPhoto', formData.photo || '');
+        router.replace('/dashboard');
+        return;
+      }
+
+      if (!formData.password) {
+        throw new Error('Please create a password');
       }
       if (formData.password.length < 6) {
         throw new Error('Password must be at least 6 characters');
@@ -100,6 +137,14 @@ function StaffRegisterInner() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-slate-500">Verifying invitation...</div>
+      </div>
+    );
+  }
+
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-slate-500">Preparing your account...</div>
       </div>
     );
   }
@@ -167,10 +212,94 @@ function StaffRegisterInner() {
               </div>
             )}
 
-            {!staff || staff.active ? (
-              <div className="text-center py-8 text-slate-500">
-                This invitation is no longer valid. Please contact your administrator.
+            {staff?.active ? (
+              <div className="text-center py-8 space-y-4">
+                <p className="text-slate-500">This account is already active.</p>
+                <button
+                  type="button"
+                  onClick={() => router.replace('/login')}
+                  className="btn-primary"
+                >
+                  Go to Login
+                </button>
               </div>
+            ) : cameFromEmail ? (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <p className="text-sm text-slate-500 text-center">
+                  Your password is set. Complete your profile to finish signing in.
+                </p>
+                <div className="flex justify-center mb-4">
+                  <label className="relative w-20 h-20 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-slate-400" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="input-field pl-11"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                    Phone Number
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="input-field pl-11"
+                      placeholder="+261 34 000 0000"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 bg-primary hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:translate-y-[-1px] active:translate-y-0 active:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center text-[15px]"
+                >
+                  {loading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2.5 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Finishing...
+                    </span>
+                  ) : (
+                    'Complete Registration'
+                  )}
+                </button>
+              </form>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="flex justify-center mb-4">

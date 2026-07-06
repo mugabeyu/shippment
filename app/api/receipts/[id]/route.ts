@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .select()
       .single();
     if (error) throw error;
+    if (sentViaWhatsapp !== undefined) {
+      logAudit(req, sentViaWhatsapp ? 'receipt_sent_whatsapp' : 'receipt_marked_unsent', { id });
+    }
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
