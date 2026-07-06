@@ -214,5 +214,5 @@ ON CONFLICT (id) DO NOTHING;
 
 CREATE POLICY "Public read access to photos" ON storage.objects FOR SELECT USING (bucket_id = 'photos');
 CREATE POLICY "Authenticated users can upload photos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'photos' AND auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can update photos" ON storage.objects FOR UPDATE WITH CHECK (bucket_id = 'photos' AND auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can delete photos" ON storage.objects FOR DELETE WITH CHECK (bucket_id = 'photos' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can update photos" ON storage.objects FOR UPDATE USING (bucket_id = 'photos' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can delete photos" ON storage.objects FOR DELETE USING (bucket_id = 'photos' AND auth.role() = 'authenticated');
