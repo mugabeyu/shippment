@@ -25,13 +25,18 @@ export function downloadCSV(filename: string, rows: (string | number)[][]) {
 
 function receiptLines(
 shipment: Shipment,
-customer: Customer | undefined,
 settings: Settings)
 {
-  const cost = shipment.weightKg * settings.defaultRatePerKg;
+  const cost = shipment.finalAmount ?? shipment.basePrice ?? shipment.weightKg * settings.defaultRatePerKg;
+  const baseCost = shipment.basePrice ?? shipment.weightKg * settings.defaultRatePerKg;
+  const discount = shipment.discountAmount ?? 0;
   return {
     cost,
-    fmtCost: `${cost.toLocaleString()} ${settings.currency}`
+    baseCost,
+    discount,
+    fmtCost: `${cost.toLocaleString()} ${settings.currency}`,
+    fmtBaseCost: `${baseCost.toLocaleString()} ${settings.currency}`,
+    fmtDiscount: discount > 0 ? `- ${discount.toLocaleString()} ${settings.currency}` : null
   };
 }
 
@@ -42,36 +47,8 @@ customer: Customer | undefined,
 settings: Settings)
 {
   const doc = new jsPDF();
-  const { fmtCost } = receiptLines(shipment, customer, settings);
-
-  // Header band
-  doc.setFillColor(24, 24, 27);
-  doc.rect(0, 0, 210, 34, 'F');
-  doc.setTextColor(234, 179, 8);
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text(settings.companyName.toUpperCase(), 14, 16);
-  doc.setTextColor(200, 200, 200);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(settings.address, 14, 23);
-  doc.text(`${settings.phone}  |  ${settings.contactEmail}`, 14, 28);
-
-  doc.setTextColor(20, 20, 20);
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('SHIPMENT RECEIPT', 14, 48);
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Tracking No: ${shipment.trackingNumber}`, 14, 56);
-  doc.text(`Date: ${shipment.date}`, 150, 56);
-
-  autoTable(doc, {
-    startY: 64,
-    theme: 'grid',
-    headStyles: { fillColor: [24, 24, 27], textColor: [234, 179, 8] },
-    body: [
+  const { fmtCost, fmtBaseCost, fmtDiscount } = receiptLines(shipment, settings);
+  const rows = [
     ['Customer', customer?.name ?? 'Unknown'],
     ['Phone (Loyalty ID)', customer?.phone ?? '-'],
     ['Route', `${shipment.origin} \u2192 ${shipment.destination}`],
@@ -80,8 +57,19 @@ settings: Settings)
     ['Weight', `${shipment.weightKg} kg`],
     ['Quantity', `${shipment.quantity} item(s)`],
     ['Status', shipment.status],
-    ['Payment', `${shipment.paymentStatus} (${shipment.paymentMethod})`],
-    ['Total', fmtCost]],
+    ['Payment', `${shipment.paymentStatus} (${shipment.paymentMethod})`]
+  ];
+  if (fmtDiscount) {
+    rows.push(['Subtotal', fmtBaseCost]);
+    rows.push(['Discount', fmtDiscount]);
+  }
+  rows.push(['Total', fmtCost]);
+
+  autoTable(doc, {
+    startY: 64,
+    theme: 'grid',
+    headStyles: { fillColor: [24, 24, 27], textColor: [234, 179, 8] },
+    body: rows,
 
     columnStyles: {
       0: { fontStyle: 'bold', cellWidth: 55, fillColor: [244, 244, 245] }
@@ -107,8 +95,11 @@ export function whatsappReceiptText(
 shipment: Shipment,
 settings: Settings)
 : string {
-  const cost = shipment.weightKg * settings.defaultRatePerKg;
-  return (
+  const cost = shipment.finalAmount ?? shipment.basePrice ?? shipment.weightKg * settings.defaultRatePerKg;
+  const baseCost = shipment.basePrice ?? shipment.weightKg * settings.defaultRatePerKg;
+  const discount = shipment.discountAmount ?? 0;
+  
+  let text = (
     `*${settings.companyName.toUpperCase()} - RECEIPT*\n\n` +
     `Tracking: ${shipment.trackingNumber}\n` +
     `Date: ${shipment.date}\n` +
@@ -117,8 +108,15 @@ settings: Settings)
     `Weight: ${shipment.weightKg} kg\n` +
     `Quantity: ${shipment.quantity}\n` +
     `Status: ${shipment.status}\n` +
-    `Payment: ${shipment.paymentStatus} - ${shipment.paymentMethod}\n` +
-    `Total: ${cost.toLocaleString()} ${settings.currency}\n\n` +
-    `Thank you for choosing ${settings.companyName}!`);
-
+    `Payment: ${shipment.paymentStatus} - ${shipment.paymentMethod}\n`
+  );
+  
+  if (discount > 0) {
+    text += `Subtotal: ${baseCost.toLocaleString()} ${settings.currency}\n`;
+    text += `Discount: - ${discount.toLocaleString()} ${settings.currency}\n`;
+  }
+  text += `Total: ${cost.toLocaleString()} ${settings.currency}\n\n`;
+  text += `Thank you for choosing ${settings.companyName}!`;
+  
+  return text;
 }

@@ -1,40 +1,44 @@
 {
-  "name": "magic-patterns-vite-template",
-  "version": "0.0.1",
+  "name": "lagrande-shipping",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "preview": "npx vite preview"
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "npx vite",
+    "dev:server": "npx tsx src/server/src/index.ts",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "npx vite build",
+    "build:server": "npx tsc src/server/src/index.ts --outDir src/server/dist --module commonjs --esModuleInterop --target ES2020 --skipLibCheck",
+    "start": "node src/server/dist/index.js",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@emotion/react": "^11.13.3",
-    "react-router-dom": "^6.26.2",
-    "zustand": "latest",
-    "zustand/middleware": "latest",
-    "lucide-react": "0.522.0",
-    "recharts": "^2.12.7",
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "jspdf": "^2.5.1",
-    "jspdf-autotable": "latest"
+    "jspdf-autotable": "^3.8.4",
+    "concurrently": "^8.2.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/node": "^20.11.18",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "latest",
     "eslint": "^8.50.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.2.0",
+    "postcss": "latest",
     "tailwindcss": "3.4.17",
-    "autoprefixer": "latest",
-    "postcss": "latest"
+    "tsx": "^4.19.3",
+    "typescript": "^5.5.4",
+    "vite": "^5.2.0"
   }
 }
