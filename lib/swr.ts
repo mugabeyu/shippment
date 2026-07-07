@@ -19,7 +19,6 @@ const fetcher = (key: [string, ...any[]]) => {
     case 'notifications': return api.getNotifications(args[0]);
     case 'notifications/unread': return api.getUnreadCount();
     case 'audit': return api.getAuditLogs(args[0]);
-    case 'receipts': return api.getReceipts(args[0]);
     case 'config': return api.getConfig();
     default: return Promise.resolve(undefined);
   }
@@ -208,22 +207,6 @@ export function useAuditLogs() {
     return created;
   }, [mutate]);
   return { logs, loading: isLoading, error: error?.message, reload: () => mutate(), createAuditLog };
-}
-
-export function useReceipts() {
-  const { data, error, isLoading, mutate } = useSWR('receipts', () => api.getReceipts({ limit: 200 }));
-  const receipts = data ?? [];
-  const createReceipt = useCallback(async (data: any) => {
-    const created = await api.createReceipt(data);
-    mutate((prev) => [created, ...(prev ?? [])], false);
-    return created;
-  }, [mutate]);
-  const updateReceipt = useCallback(async (id: string, data: any) => {
-    const updated = await api.updateReceipt(id, data);
-    mutate((prev) => (prev ?? []).map((r: any) => (r.id === id ? updated : r)), false);
-    return updated;
-  }, [mutate]);
-  return { receipts, loading: isLoading, error: error?.message, reload: () => mutate(), createReceipt, updateReceipt };
 }
 
 export function useRoutes() {

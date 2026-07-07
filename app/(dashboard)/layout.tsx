@@ -22,7 +22,6 @@ import {
   UserPlus,
   Bell,
   Star,
-  Receipt,
   Truck } from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
@@ -32,7 +31,7 @@ import { supabase } from '@/lib/supabase/client';
 
 const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   LayoutDashboard, Users, Package, Tags, Gift, BarChart3, Settings, UserPlus, FileText, FileSearch,
-  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Star, Receipt, Truck
+  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Star, Truck
 };
 
 // Default navigation shown when app_config has no `navigation` entry yet.
@@ -46,7 +45,6 @@ const DEFAULT_NAV: NavItem[] = [
   { path: '/reports', label: 'Reports', icon: 'BarChart3' },
   { path: '/notifications', label: 'Notifications', icon: 'Bell' },
   { path: '/loyalty', label: 'Loyalty', icon: 'Star' },
-  { path: '/receipts', label: 'Receipts', icon: 'Receipt' },
   { path: '/audit', label: 'Audit Logs', icon: 'FileSearch' },
   { path: '/settings', label: 'Settings', icon: 'Settings' },
   { path: '/staff', label: 'Staff', icon: 'UserPlus' },
@@ -115,6 +113,29 @@ export default function DashboardLayout({ children }: LayoutProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const checkActiveStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: staff } = await supabase
+          .from('staff')
+          .select('active')
+          .eq('auth_uid', user.id)
+          .maybeSingle();
+
+        if (!staff?.active) {
+          await supabase.auth.signOut();
+          localStorage.removeItem('activeStaffName');
+          localStorage.removeItem('activeStaffEmail');
+          localStorage.removeItem('activeStaffPhoto');
+          router.replace('/login');
+        }
+      }
+    };
+
+    checkActiveStatus();
+  }, [router]);
 
   useEffect(() => {
     if (isDarkMode) {

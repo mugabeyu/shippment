@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Ship, Mail, Lock, Eye, EyeOff, CheckCircle2, Globe, Shield, BarChart3 } from 'lucide-react';
+import { Ship, Mail, Lock, Eye, EyeOff, CheckCircle2, Globe, Shield, BarChart3, User, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAppConfig } from '@/lib/swr';
 
-const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Globe,
   Shield,
   BarChart3
@@ -24,11 +24,29 @@ interface FormErrors {
   general?: string;
 }
 
+interface RegData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface RegErrors {
+  name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+}
+
 export default function Login() {
   const router = useRouter();
   const { config } = useAppConfig();
   const loginContent = config?.login_content || {};
   const loginFeatures = config?.login_features || [];
+  const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -40,6 +58,16 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [regData, setRegData] = useState<RegData>({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [regErrors, setRegErrors] = useState<RegErrors>({});
+  const [regLoading, setRegLoading] = useState(false);
+  const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -90,9 +118,14 @@ export default function Login() {
         .eq('auth_uid', data.user.id)
         .single();
 
-      if (staffError || !staffData || !staffData.active) {
+      if (staffError || !staffData) {
         await supabase.auth.signOut();
         throw new Error('Access denied. Please contact your administrator.');
+      }
+
+      if (!staffData.active) {
+        await supabase.auth.signOut();
+        throw new Error('Your account is pending approval. Please contact an administrator.');
       }
 
       localStorage.setItem('activeStaffName', staffData.name || '');
@@ -126,11 +159,70 @@ export default function Login() {
     if (!forgotPasswordEmail) return;
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail);
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
       if (error) throw error;
       setForgotPasswordSent(true);
     } catch (error: any) {
       setFormErrors({ general: error.message || 'Failed to send reset link' });
+    }
+  };
+
+  const validateRegistration = (): boolean => {
+    const newErrors: RegErrors = {};
+    if (!regData.name.trim()) newErrors.name = 'Full name is required';
+    if (!regData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^\S+@\S+\.\S+$/.test(regData.email)) newErrors.email = 'Please enter a valid email address';
+    if (!regData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!regData.password) newErrors.password = 'Password is required';
+    else if (regData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (regData.password !== regData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    setRegErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegErrors({});
+    setRegLoading(true);
+
+    try {
+      if (!validateRegistration()) {
+        setRegLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: regData.name.trim(),
+          email: regData.email.trim(),
+          phone: regData.phone.trim(),
+          password: regData.password
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || 'Registration failed');
+      }
+
+      setRegSuccess(true);
+      setRegData({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+    } catch (err: any) {
+      setRegErrors({ general: err.message || 'Registration failed. Please try again.' });
+    } finally {
+      setRegLoading(false);
+    }
+  };
+
+  const handleRegInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setRegData(prev => ({ ...prev, [name]: value }));
+    if (regErrors[name as keyof RegErrors]) {
+      setRegErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -171,6 +263,7 @@ export default function Login() {
             <div className="w-11 h-11 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl flex items-center justify-center">
               <Ship className="w-6 h-6 text-white" />
             </div>
+            <span className="text-white font-bold text-lg tracking-tight">LA GRANDE MARQUE</span>
           </div>
 
           <div className="space-y-8 max-w-xl">
@@ -186,6 +279,7 @@ export default function Login() {
             <div className="grid grid-cols-3 gap-4 opacity-0 animate-slide-up" style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
               {loginFeatures.map((feature: any, idx: number) => {
                 const Icon = ICON_MAP[feature.icon] || Globe;
+
                 return (
                   <div key={idx} className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 hover:bg-white/15 hover:border-white/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
                     <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -216,142 +310,334 @@ export default function Login() {
               <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-5">
                 <Ship className="w-7 h-7 text-primary" />
               </div>
-              <h2 className="text-[42px] font-bold text-navy-900 leading-tight tracking-tight">{loginContent.welcomeTitle || 'Welcome Back'}</h2>
+              <h2 className="text-[42px] font-bold text-navy-900 leading-tight tracking-tight">
+                {isRegister ? (loginContent.registerTitle || 'Create Account') : (loginContent.welcomeTitle || 'Sign In')}
+              </h2>
               <p className="text-sm text-navy-500 mt-3 leading-relaxed">
-                {loginContent.welcomeSubtitle || 'Sign in to continue to the admin dashboard'}
+                {isRegister ? (loginContent.registerSubtitle || 'Register to request access to the admin dashboard') : (loginContent.welcomeSubtitle || 'Sign in to continue to the admin dashboard')}
               </p>
             </div>
 
-            {formErrors.general && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-600 font-medium">{formErrors.general}</p>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
-                    <Mail className="w-5 h-5" />
+            {!isRegister ? (
+              <>
+                {formErrors.general && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm text-red-600 font-medium">{formErrors.general}</p>
+                    </div>
                   </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={`input-field pl-11 ${formErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
-                    placeholder="Enter your email"
-                  />
-                </div>
-                {formErrors.email && (
-                  <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.email}</p>
                 )}
-              </div>
 
-              <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
-                    <Lock className="w-5 h-5" />
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={`input-field pl-11 ${formErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                    {formErrors.email && (
+                      <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.email}</p>
+                    )}
                   </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    autoComplete="current-password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className={`input-field pl-11 pr-12 ${formErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
-                    placeholder="Enter your password"
-                  />
+
+                  <div>
+                    <label htmlFor="password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        autoComplete="current-password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className={`input-field pl-11 pr-12 ${formErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                        placeholder="Enter your password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-navy-400 hover:text-navy-600 transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                    {formErrors.password && (
+                      <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between" style={{ marginTop: '18px' }}>
+                    <div className="flex items-center">
+                      <input
+                        id="remember-me"
+                        name="rememberMe"
+                        type="checkbox"
+                        checked={formData.rememberMe}
+                        onChange={handleInputChange}
+                        className="h-4 w-4 text-primary focus:ring-primary border-navy-300 rounded"
+                      />
+                      <label htmlFor="remember-me" className="ml-2.5 block text-sm text-navy-700 cursor-pointer select-none">
+                        Remember me
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setForgotPasswordSent(false);
+                      }}
+                      className="text-sm font-semibold text-primary hover:text-primary-700 transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-navy-400 hover:text-navy-600 transition-colors"
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-14 bg-gradient-to-r from-primary to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:translate-y-[-1px] active:translate-y-0 active:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center text-[15px]"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2.5 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                      </div>
                     ) : (
-                      <Eye className="w-5 h-5" />
+                      'Sign In'
                     )}
                   </button>
-                </div>
-                {formErrors.password && (
-                  <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.password}</p>
-                )}
-              </div>
+                </form>
 
-              <div className="flex items-center justify-between" style={{ marginTop: '18px' }}>
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="rememberMe"
-                    type="checkbox"
-                    checked={formData.rememberMe}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-primary focus:ring-primary border-navy-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2.5 block text-sm text-navy-700 cursor-pointer select-none">
-                    Remember me
-                  </label>
+                <div className="mt-6 p-4 bg-blue-50/80 border border-blue-100 rounded-xl">
+                  <div className="flex items-start">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 mr-3 flex-shrink-0" />
+                    <p className="text-xs text-navy-600 leading-relaxed">
+                      {loginContent.securityNote || 'For your security, always sign out before leaving your workstation.'}
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(true);
-                    setForgotPasswordSent(false);
-                  }}
-                  className="text-sm font-semibold text-primary hover:text-primary-700 transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-14 bg-gradient-to-r from-primary to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:translate-y-[-1px] active:translate-y-0 active:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center text-[15px]"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2.5 h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
+                <p className="text-center text-sm text-navy-500 mt-6">
+                  Don't have an account?{' '}
+                  <button type="button" onClick={() => { setIsRegister(true); setRegSuccess(false); setRegErrors({}); }} className="text-primary font-semibold hover:text-primary-700 transition-colors">
+                    Create one
+                  </button>
+                </p>
+              </>
+            ) : (
+              <>
+                {regSuccess ? (
+                  <div className="text-center py-6 space-y-4">
+                    <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto" />
+                    <h3 className="text-xl font-bold text-navy-900">Registration Complete</h3>
+                    <p className="text-sm text-slate-600">Your account has been created and is pending approval. You can sign in once an administrator approves your account.</p>
+                    <button
+                      type="button"
+                      onClick={() => { setIsRegister(false); setRegSuccess(false); }}
+                      className="btn-primary mt-4"
+                    >
+                      Back to Login
+                    </button>
                   </div>
                 ) : (
-                  'Sign In'
-                )}
-              </button>
-            </form>
+                  <>
+                    {regErrors.general && (
+                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
+                        <div className="flex items-center">
+                          <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm text-red-600 font-medium">{regErrors.general}</p>
+                        </div>
+                      </div>
+                    )}
 
-            <div className="mt-6 p-4 bg-blue-50/80 border border-blue-100 rounded-xl">
-              <div className="flex items-start">
-                <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 mr-3 flex-shrink-0" />
-                <p className="text-xs text-navy-600 leading-relaxed">
-                  {loginContent.securityNote || 'For your security, always sign out before leaving your workstation.'}
-                </p>
-              </div>
-            </div>
+                    <form onSubmit={handleRegister} className="space-y-5">
+                      <div>
+                        <label htmlFor="reg-name" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                          Full Name
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                            <User className="w-5 h-5" />
+                          </div>
+                          <input
+                            id="reg-name"
+                            name="name"
+                            type="text"
+                            required
+                            value={regData.name}
+                            onChange={handleRegInputChange}
+                            className={`input-field pl-11 ${regErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            placeholder="Enter your full name"
+                          />
+                        </div>
+                        {regErrors.name && (
+                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.name}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="reg-email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                            <Mail className="w-5 h-5" />
+                          </div>
+                          <input
+                            id="reg-email"
+                            name="email"
+                            type="email"
+                            required
+                            value={regData.email}
+                            onChange={handleRegInputChange}
+                            className={`input-field pl-11 ${regErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            placeholder="Enter your email"
+                          />
+                        </div>
+                        {regErrors.email && (
+                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.email}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="reg-phone" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                          Phone Number
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                            <Phone className="w-5 h-5" />
+                          </div>
+                          <input
+                            id="reg-phone"
+                            name="phone"
+                            type="tel"
+                            required
+                            value={regData.phone}
+                            onChange={handleRegInputChange}
+                            className={`input-field pl-11 ${regErrors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            placeholder="+261 34 000 0000"
+                          />
+                        </div>
+                        {regErrors.phone && (
+                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.phone}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="reg-password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <input
+                            id="reg-password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            minLength={6}
+                            value={regData.password}
+                            onChange={handleRegInputChange}
+                            className={`input-field pl-11 pr-12 ${regErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            placeholder="Create a password (min 6 characters)"
+                          />
+                        </div>
+                        {regErrors.password && (
+                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.password}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="reg-confirm-password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                          Confirm Password
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <input
+                            id="reg-confirm-password"
+                            name="confirmPassword"
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            minLength={6}
+                            value={regData.confirmPassword}
+                            onChange={handleRegInputChange}
+                            className={`input-field pl-11 pr-12 ${regErrors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            placeholder="Confirm your password"
+                          />
+                        </div>
+                        {regErrors.confirmPassword && (
+                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.confirmPassword}</p>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={regLoading}
+                        className="w-full h-14 bg-gradient-to-r from-primary to-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:translate-y-[-1px] active:translate-y-0 active:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center text-[15px]"
+                      >
+                        {regLoading ? (
+                          <div className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-2.5 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Creating Account...
+                          </div>
+                        ) : (
+                          'Create Account'
+                        )}
+                      </button>
+                    </form>
+
+                    <p className="text-center text-sm text-navy-500 mt-6">
+                      Already have an account?{' '}
+                      <button type="button" onClick={() => { setIsRegister(false); setRegErrors({}); }} className="text-primary font-semibold hover:text-primary-700 transition-colors">
+                        Sign in
+                      </button>
+                    </p>
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           <div className="mt-6 flex items-center justify-between text-xs text-navy-400">
-            <p className="font-medium">{loginContent.copyright || '© 2026'}</p>
+            <p className="font-medium">{loginContent.copyright || '© 2026 LA GRANDE MARQUE'}</p>
             <p className="font-medium">Version 1.0.0</p>
           </div>
         </div>

@@ -2,16 +2,18 @@
 
 import React, { useState } from 'react';
 import { useStaff, type Staff } from '@/lib/swr';
-import { Plus, Search, X, Mail, Shield, Clock } from 'lucide-react';
+import { Plus, Search, X, Mail, Shield, CheckCircle } from 'lucide-react';
 
 export default function Staff() {
-  const { staff, loading, inviteStaff, resendStaffInvite } = useStaff();
+  const { staff, loading, inviteStaff, updateStaff } = useStaff();
   const [searchTerm, setSearchTerm] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteDraft, setInviteDraft] = useState<{ email: string; role: 'Admin' | 'Staff' }>({ email: '', role: 'Staff' });
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [inviteLink, setInviteLink] = useState('');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [approvingRole, setApprovingRole] = useState<'Admin' | 'Staff'>('Staff');
 
   const openInvite = () => {
     setInviteDraft({ email: '', role: 'Staff' });
@@ -37,14 +39,15 @@ export default function Staff() {
     }
   };
 
-  const handleResend = async (id: string) => {
+  const handleApprove = async (id: string) => {
     setSending(true);
     try {
-      const result = await resendStaffInvite(id);
-      setMessage({ type: 'success', text: result.message || 'Invitation resent successfully!' });
+      const updated = await updateStaff(id, { active: true, role: approvingRole });
+      setMessage({ type: 'success', text: `${updated.name || updated.email} has been approved as ${approvingRole}.` });
       setTimeout(() => setMessage(null), 3000);
+      setApprovingId(null);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to resend invitation' });
+      setMessage({ type: 'error', text: err.message || 'Failed to approve staff' });
     } finally {
       setSending(false);
     }
@@ -71,7 +74,7 @@ export default function Staff() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-semibold text-navy-900">Staff Management</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Read-only directory. Invite new staff or resend pending invitations.</p>
+          <p className="text-sm text-slate-500 mt-0.5">Invite new staff and approve pending access.</p>
         </div>
         <button
           onClick={openInvite}
@@ -135,21 +138,32 @@ export default function Staff() {
                 <div className="flex items-center">
                   <span className="text-slate-500 mr-2">Status:</span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    s.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                    s.active ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                   }`}>
-                    {s.active ? 'Active' : 'Invitation Sent'}
+                    {s.active ? 'Active' : 'Pending Approval'}
                   </span>
                 </div>
               </div>
 
               {!s.active && (
-                <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Assign Role</span>
+                    <select
+                      value={approvingId === s.id ? approvingRole : (s.role === 'Admin' ? 'Admin' : 'Staff')}
+                      onChange={(e) => { setApprovingId(s.id); setApprovingRole(e.target.value as 'Admin' | 'Staff'); }}
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-navy-900 bg-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="Staff">Staff</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
                   <button
-                    onClick={() => handleResend(s.id)}
+                    onClick={() => handleApprove(s.id)}
                     disabled={sending}
-                    className="flex items-center w-full justify-center px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Resend Invitation
+                    className="flex items-center w-full justify-center px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Approve Access
                   </button>
                 </div>
               )}

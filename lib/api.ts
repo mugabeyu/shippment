@@ -122,19 +122,6 @@ export const api = {
   // Config
   getConfig: () => request<Record<string, any>>('/config'),
   getConfigKey: (key: string) => request<{ key: string; value: any }>(`/config/${encodeURIComponent(key)}`),
-
-  // Receipts
-  getReceipts: (params?: { shipmentId?: string; customerId?: string; limit?: number; offset?: number }) => {
-    const qs = new URLSearchParams();
-    if (params?.shipmentId) qs.set('shipmentId', params.shipmentId);
-    if (params?.customerId) qs.set('customerId', params.customerId);
-    if (params?.limit) qs.set('limit', String(params.limit));
-    if (params?.offset) qs.set('offset', String(params.offset));
-    const q = qs.toString();
-    return request<any[]>(`/receipts${q ? `?${q}` : ''}`);
-  },
-  getReceipt: (id: string) => request<any>(`/receipts/${id}`),
-  getReceiptByNumber: (number: string) => request<any>(`/receipts/number/${number}`),
-  createReceipt: (data: any) => request<any>('/receipts', { method: 'POST', body: JSON.stringify(data) }),
-  updateReceipt: (id: string, data: any) => request<any>(`/receipts/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 };
+
+  // Config
