@@ -32,16 +32,20 @@ export async function proxy(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (user) {
-    const { data: staff } = await supabase()
-      .from('staff')
-      .select('active')
-      .eq('auth_uid', user.id)
-      .maybeSingle();
+    try {
+      const { data: staff } = await supabase()
+        .from('staff')
+        .select('active')
+        .eq('auth_uid', user.id)
+        .maybeSingle();
 
-    if (!staff?.active && !pathname.startsWith('/login')) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
+      if (!staff?.active && !pathname.startsWith('/login')) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        return NextResponse.redirect(url);
+      }
+    } catch {
+      // If the staff lookup fails, don't block the request.
     }
   }
 
