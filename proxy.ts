@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
 
   if (user) {
     try {
-      const { data: staff } = await supabase()
+      const { data: staff } = await supabase
         .from('staff')
         .select('active')
         .eq('auth_uid', user.id)

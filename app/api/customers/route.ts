@@ -21,10 +21,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone, email, address, notes, photo } = await req.json();
+    const { name, phone, email, address, notes, photo, active } = await req.json();
+    const insertData: Record<string, any> = { name, phone, email, address, notes, photo, total_kg_sent: 0 };
+    if (active !== undefined) insertData.active = active;
+
     const { data, error } = await supabase()
       .from('customers')
-      .insert([{ name, phone, email, address, notes, photo, total_kg_sent: 0 }])
+      .insert([insertData])
       .select()
       .single();
     if (error) throw error;

@@ -131,6 +131,7 @@ export default function Login() {
       localStorage.setItem('activeStaffName', staffData.name || '');
       localStorage.setItem('activeStaffEmail', staffData.email || '');
       localStorage.setItem('activeStaffPhoto', staffData.photo || '');
+      localStorage.setItem('activeStaffRole', staffData.role || '');
       if (formData.rememberMe) {
         localStorage.setItem('rememberMe', 'true');
       }

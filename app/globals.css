@@ -31,7 +31,7 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     @apply bg-slate-50 text-navy-900 antialiased;
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .dark html {

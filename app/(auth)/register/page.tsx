@@ -91,6 +91,7 @@ function StaffRegisterInner() {
         localStorage.setItem('activeStaffName', formData.name);
         localStorage.setItem('activeStaffEmail', staff?.email || '');
         localStorage.setItem('activeStaffPhoto', formData.photo || '');
+        localStorage.setItem('activeStaffRole', staff?.role || '');
         router.replace('/dashboard');
         return;
       }

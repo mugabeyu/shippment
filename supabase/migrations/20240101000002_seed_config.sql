@@ -15,7 +15,6 @@ INSERT INTO app_config (key, value, type, description) VALUES
       {"path":"/offers","label":"Offers","icon":"Gift"},
       {"path":"/reports","label":"Reports","icon":"BarChart3"},
       {"path":"/notifications","label":"Activity","icon":"Bell"},
-      {"path":"/loyalty","label":"Loyalty","icon":"Star"},
       {"path":"/audit","label":"Audit Logs","icon":"FileSearch"},
       {"path":"/settings","label":"Settings","icon":"Settings"},
       {"path":"/staff","label":"Staff","icon":"UserPlus"}
@@ -31,7 +30,7 @@ INSERT INTO app_config (key, value, type, description) VALUES
   ),
   (
     'breadcrumbs',
-    '{"shipments":"Shipments","customers":"Customers","staff":"Staff","categories":"Categories","offers":"Offers","reports":"Reports","notifications":"Notifications","loyalty":"Loyalty","audit":"Audit Logs","settings":"Settings","profile":"Profile"}'::jsonb,
+    '{"shipments":"Shipments","customers":"Customers","staff":"Staff","categories":"Categories","offers":"Offers","reports":"Reports","notifications":"Notifications","audit":"Audit Logs","settings":"Settings","profile":"Profile"}'::jsonb,
     'json',
     'Breadcrumb labels by route segment'
   ),

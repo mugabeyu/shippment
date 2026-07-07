@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCustomers, type Customer } from '@/lib/swr';
-import { Plus, Search, Phone, Mail, MapPin, X, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, X, Edit2, Ban, UserCheck } from 'lucide-react';
 
 export default function Customers() {
   const router = useRouter();
-  const { customers, loading, error, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, loading, error, addCustomer, updateCustomer, toggleCustomerActive } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draft, setDraft] = useState<Customer>({
@@ -18,11 +18,12 @@ export default function Customers() {
     address: '',
     notes: '',
     totalKgSent: 0,
-    photo: ''
+    photo: '',
+    active: true
   });
 
   const openNew = () => {
-    setDraft({ id: '', name: '', phone: '', email: '', address: '', notes: '', totalKgSent: 0, photo: '' });
+    setDraft({ id: '', name: '', phone: '', email: '', address: '', notes: '', totalKgSent: 0, photo: '', active: true });
     setIsModalOpen(true);
   };
   const openEdit = (customer: Customer) => {
@@ -34,7 +35,8 @@ export default function Customers() {
     if (draft.id) {
       await updateCustomer(draft.id, draft);
     } else {
-      await addCustomer({ ...draft, totalKgSent: 0, photo: '' });
+      const { active, ...createData } = draft;
+      await addCustomer({ ...createData, totalKgSent: 0, photo: '' });
     }
     setIsModalOpen(false);
   };
@@ -92,8 +94,15 @@ export default function Customers() {
                         {customer.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                       </span>
                     </div>
-                    <div>
-                    <h3 className="text-base font-semibold text-navy-900">{customer.name}</h3>
+                    <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-navy-900 truncate">{customer.name}</h3>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                        customer.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {customer.active ? 'Active' : 'Blocked'}
+                      </span>
+                    </div>
                     <div className="text-sm text-amber-500 font-medium mt-1">
                       Loyalty: {customer.totalKgSent} kg sent
                     </div>
@@ -107,10 +116,12 @@ export default function Customers() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); deleteCustomer(customer.id); }}
-                    aria-label={`Delete ${customer.name}`}
-                    className="p-1.5 text-slate-500 hover:text-red-500 transition-colors">
-                    <Trash2 className="w-4 h-4" />
+                    onClick={(e) => { e.stopPropagation(); toggleCustomerActive(customer.id, !customer.active); }}
+                    aria-label={customer.active ? `Block ${customer.name}` : `Unblock ${customer.name}`}
+                    className={`p-1.5 transition-colors ${
+                      customer.active ? 'text-slate-500 hover:text-red-500' : 'text-slate-500 hover:text-green-500'
+                    }`}>
+                    {customer.active ? <Ban className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                   </button>
                 </div>
               </div>

@@ -2,10 +2,13 @@
 
 import React, { useState } from 'react';
 import { useStaff, type Staff } from '@/lib/swr';
-import { Plus, Search, X, Mail, Shield, CheckCircle } from 'lucide-react';
+import { Plus, Search, X, Mail, Shield, CheckCircle, Ban, UserCheck } from 'lucide-react';
+import { useUiStore } from '@/lib/store';
 
 export default function Staff() {
-  const { staff, loading, inviteStaff, updateStaff } = useStaff();
+  const { staff, loading, inviteStaff, updateStaff, toggleStaffActive } = useStaff();
+  const { activeStaffRole } = useUiStore();
+  const isAdmin = activeStaffRole === 'Admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteDraft, setInviteDraft] = useState<{ email: string; role: 'Admin' | 'Staff' }>({ email: '', role: 'Staff' });
@@ -48,6 +51,19 @@ export default function Staff() {
       setApprovingId(null);
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Failed to approve staff' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    setSending(true);
+    try {
+      const updated = await toggleStaffActive(id, !currentActive);
+      setMessage({ type: 'success', text: `${updated.name || updated.email} has been ${!currentActive ? 'activated' : 'blocked'}.` });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update staff status' });
     } finally {
       setSending(false);
     }
@@ -138,9 +154,9 @@ export default function Staff() {
                 <div className="flex items-center">
                   <span className="text-slate-500 mr-2">Status:</span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    s.active ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    s.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>
-                    {s.active ? 'Active' : 'Pending Approval'}
+                    {s.active ? 'Active' : 'Blocked'}
                   </span>
                 </div>
               </div>
@@ -164,6 +180,31 @@ export default function Staff() {
                     className="flex items-center w-full justify-center px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Approve Access
+                  </button>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => handleToggleActive(s.id, s.active)}
+                    disabled={sending}
+                    className={`flex items-center w-full justify-center px-3 py-2 rounded-lg transition-colors disabled:opacity-50 ${
+                      s.active
+                        ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100'
+                        : 'bg-green-50 border border-green-200 text-green-700 hover:bg-green-100'
+                    }`}>
+                    {s.active ? (
+                      <>
+                        <Ban className="w-4 h-4 mr-2" />
+                        Block Access
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="w-4 h-4 mr-2" />
+                        Unblock Access
+                      </>
+                    )}
                   </button>
                 </div>
               )}

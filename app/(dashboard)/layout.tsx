@@ -21,17 +21,19 @@ import {
   AlertTriangle,
   UserPlus,
   Bell,
-  Star,
-  Truck } from
+  Truck,
+  ChevronLeft,
+  ChevronRight
+} from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { useAppConfig } from '@/lib/swr';
 import { supabase } from '@/lib/supabase/client';
 
-const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, Users, Package, Tags, Gift, BarChart3, Settings, UserPlus, FileText, FileSearch,
-  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Star, Truck
+  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Truck
 };
 
 // Default navigation shown when app_config has no `navigation` entry yet.
@@ -44,7 +46,7 @@ const DEFAULT_NAV: NavItem[] = [
   { path: '/offers', label: 'Offers', icon: 'Gift' },
   { path: '/reports', label: 'Reports', icon: 'BarChart3' },
   { path: '/notifications', label: 'Notifications', icon: 'Bell' },
-  { path: '/loyalty', label: 'Loyalty', icon: 'Star' },
+
   { path: '/audit', label: 'Audit Logs', icon: 'FileSearch' },
   { path: '/settings', label: 'Settings', icon: 'Settings' },
   { path: '/staff', label: 'Staff', icon: 'UserPlus' },
@@ -60,19 +62,25 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-type ResolvedNavItem = NavItem & { component: React.ComponentType<{className?: string}> };
+type ResolvedNavItem = NavItem & { component: React.ComponentType<{ className?: string }> };
 
 export default function DashboardLayout({ children }: LayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { sidebarOpen, setSidebarOpen, activeStaffName, activeStaffEmail, activeStaffPhoto } = useUiStore();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebarCollapsed') === 'true';
+    }
+    return false;
+  });
   const { config, loading } = useAppConfig();
   const navItems: ResolvedNavItem[] = ((config?.navigation && config.navigation.length ? config.navigation : DEFAULT_NAV) as NavItem[])
     .map((item: NavItem) => ({
       ...item,
       component: ICON_MAP[item.icon] || LayoutDashboard
     }))
-    .filter((item: NavItem & { component?: React.ComponentType<{className?: string}> }): item is ResolvedNavItem => Boolean(item.component));
+    .filter((item: NavItem & { component?: React.ComponentType<{ className?: string }> }): item is ResolvedNavItem => Boolean(item.component));
   const [showProfile, setShowProfile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -94,6 +102,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
     localStorage.removeItem('activeStaffName');
     localStorage.removeItem('activeStaffEmail');
     localStorage.removeItem('activeStaffPhoto');
+    localStorage.removeItem('activeStaffRole');
     router.push('/login');
   });
 
@@ -105,6 +114,10 @@ export default function DashboardLayout({ children }: LayoutProps) {
     window.addEventListener('session-warning', handler as EventListener);
     return () => window.removeEventListener('session-warning', handler as EventListener);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -129,6 +142,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           localStorage.removeItem('activeStaffName');
           localStorage.removeItem('activeStaffEmail');
           localStorage.removeItem('activeStaffPhoto');
+          localStorage.removeItem('activeStaffRole');
           router.replace('/login');
         }
       }
@@ -156,6 +170,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
     localStorage.removeItem('activeStaffName');
     localStorage.removeItem('activeStaffEmail');
     localStorage.removeItem('activeStaffPhoto');
+    localStorage.removeItem('activeStaffRole');
     router.push('/login');
   };
 
@@ -213,11 +228,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           flex flex-col shadow-xl
           lg:static lg:translate-x-0
+          ${sidebarCollapsed ? 'lg:w-16' : ''}
         `}
       >
         <div className="h-16 flex items-center px-6 border-b border-white/10">
           <Ship className="w-6 h-6 sm:w-7 sm:h-7 text-gold mr-2 sm:mr-3" />
-          <div>
+          <div className={sidebarCollapsed ? 'lg:hidden' : ''}>
             <span className="text-xs sm:text-sm font-bold text-white tracking-tight">{branding.companyName || 'LA GRANDE MARQUE'}</span>
             <div className="text-[9px] sm:text-[10px] text-blue-300 font-medium tracking-wide">{branding.tagline || 'SHIPPING ADMIN'}</div>
           </div>
@@ -236,10 +252,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                     className={`
                       flex items-center px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-medium
                       ${isActive ? 'bg-white/10 text-gold' : 'text-blue-100 hover:bg-white/5 hover:text-white'}
+                      ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}
                     `}
+                    title={sidebarCollapsed ? item.label : undefined}
                   >
                     <Icon className="w-4 h-4 mr-2 sm:mr-3" />
-                    {item.label}
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
                   </Link>
                 </li>
               );
@@ -247,13 +265,21 @@ export default function DashboardLayout({ children }: LayoutProps) {
           </ul>
         </nav>
 
-        <div className="p-3 sm:p-4 border-t border-white/10">
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="hidden lg:flex items-center justify-center p-3 text-blue-300 hover:text-white hover:bg-white/5 transition-colors"
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+        </button>
+
+        <div className={`p-3 sm:p-4 border-t border-white/10 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-2 sm:px-3 py-2 text-blue-200 hover:bg-white/5 hover:text-white rounded-lg transition-all duration-200 text-xs sm:text-sm font-medium"
+            className={`flex items-center w-full px-2 sm:px-3 py-2 text-blue-200 hover:bg-white/5 hover:text-white rounded-lg transition-all duration-200 text-xs sm:text-sm font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
           >
             <LogOut className="w-4 h-4 mr-2 sm:mr-3" />
-            Logout
+            <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Logout</span>
           </button>
         </div>
       </aside>
@@ -307,19 +333,19 @@ export default function DashboardLayout({ children }: LayoutProps) {
               </button>
               {showProfile && (
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                   <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm overflow-hidden shrink-0">
-                       {activeStaffPhoto ? (
-                         <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
-                       ) : (
-                         activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
-                       )}
-                     </div>
-                     <div className="min-w-0">
-                       <div className="text-sm font-semibold text-navy-900 dark:text-slate-100 truncate">{activeStaffName}</div>
-                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{activeStaffEmail}</div>
-                     </div>
-                   </div>
+                  <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm overflow-hidden shrink-0">
+                      {activeStaffPhoto ? (
+                        <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
+                      ) : (
+                        activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-navy-900 dark:text-slate-100 truncate">{activeStaffName}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{activeStaffEmail}</div>
+                    </div>
+                  </div>
                   <div className="py-2">
                     <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
                       <User className="w-4 h-4 mr-3 text-slate-400" /> Profile

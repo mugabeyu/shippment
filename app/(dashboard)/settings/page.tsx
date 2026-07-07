@@ -86,10 +86,6 @@ export default function Settings() {
       )}
       <div className="flex justify-between items-center">
         <h1 className="text-lg font-semibold text-navy-900">Settings</h1>
-        <button onClick={handleSave} className="btn-primary">
-          <Save className="w-5 h-5 mr-2" />
-          {saved ? 'Saved!' : 'Save Changes'}
-        </button>
       </div>
 
       <section className="card overflow-hidden">
@@ -167,9 +163,16 @@ export default function Settings() {
               <Plus className="w-4 h-4 mr-2" /> Add
             </button>
           </div>
+          </div>
+        </section>
+
+        <div className="flex justify-end">
+          <button onClick={handleSave} className="btn-primary">
+            <Save className="w-5 h-5 mr-2" />
+            {saved ? 'Saved!' : 'Save Changes'}
+          </button>
         </div>
-      </section>
-    </div>
+      </div>
   );
 }
 

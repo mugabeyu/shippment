@@ -14,6 +14,7 @@ export interface Customer {
   photo: string;
   registration_date?: string;
   last_shipment_date?: string;
+  active: boolean;
 }
 
 export interface Staff {
@@ -137,8 +138,9 @@ interface UiState {
   activeStaffName: string;
   activeStaffEmail: string;
   activeStaffPhoto: string;
+  activeStaffRole: string;
   setSidebarOpen: (open: boolean) => void;
-  setActiveStaff: (name: string, email: string, photo?: string) => void;
+  setActiveStaff: (name: string, email: string, role: string, photo?: string) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -146,16 +148,19 @@ export const useUiStore = create<UiState>((set) => ({
   activeStaffName: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffName') || '') : '',
   activeStaffEmail: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffEmail') || '') : '',
   activeStaffPhoto: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffPhoto') || '') : '',
+  activeStaffRole: typeof window !== 'undefined' ? (localStorage.getItem('activeStaffRole') || '') : '',
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setActiveStaff: (name, email, photo) => {
+  setActiveStaff: (name, email, role, photo) => {
     if (photo !== undefined) {
       localStorage.setItem('activeStaffPhoto', photo);
     }
     localStorage.setItem('activeStaffName', name);
     localStorage.setItem('activeStaffEmail', email);
+    localStorage.setItem('activeStaffRole', role);
     set({
       activeStaffName: name,
       activeStaffEmail: email,
+      activeStaffRole: role,
       ...(photo !== undefined ? { activeStaffPhoto: photo } : {})
     });
   }

@@ -72,6 +72,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Loyalty discount: for active offers with target_kg/reward_kg,
+    // give free kg proportional to how far the customer exceeded the target.
+    const { data: loyaltyOffers } = await supabase()
+      .from('offers')
+      .select('target_kg, reward_kg')
+      .eq('active', true)
+      .gt('target_kg', 0)
+      .gt('reward_kg', 0);
+
+    if (loyaltyOffers && loyaltyOffers.length > 0 && customerId) {
+      const { data: customer } = await supabase()
+        .from('customers')
+        .select('total_kg_sent')
+        .eq('id', customerId)
+        .single();
+
+      const customerTotalKg = customer?.total_kg_sent || 0;
+      const pricePerKg = basePrice / Math.max(1, (weightKg || 0) * (quantity || 1));
+
+      for (const offer of loyaltyOffers) {
+        const target = Number(offer.target_kg);
+        const reward = Number(offer.reward_kg);
+        const freeKg = Math.max(0, Math.min(customerTotalKg - target, reward));
+        if (freeKg > 0) {
+          discountAmount += Math.round(freeKg * pricePerKg);
+        }
+      }
+    }
+
     const finalAmount = Math.max(0, basePrice - discountAmount);
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
 

@@ -11,7 +11,7 @@ const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   Package, Users, Gift
 };
 
-type ReportType = 'shipments' | 'customers' | 'loyalty';
+type ReportType = 'shipments' | 'customers';
 
 export default function Reports() {
   const { shipments, loading: shipmentsLoading } = useShipments();
@@ -65,13 +65,11 @@ export default function Reports() {
       };
     }
     return {
-      headers: ['Customer', 'Phone', 'Total KG', 'Rewards Earned', 'Progress'],
-      rows: customers.map((c) => [c.name, c.phone, c.totalKgSent, Math.floor(c.totalKgSent / target), `${c.totalKgSent % target}/${target}kg`] as (string | number)[]),
-      summary: [
-        { label: 'Total Rewards Earned', value: customers.reduce((a, c) => a + Math.floor(c.totalKgSent / target), 0) }
-      ]
+      headers: [],
+      rows: [],
+      summary: []
     };
-  }, [type, filteredShipments, customers, target, settings]);
+  }, [type, filteredShipments, customers, settings]);
 
   const exportCSV = () => downloadCSV(`${type}-report.csv`, [headers, ...rows]);
   const exportPDF = () => {

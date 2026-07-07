@@ -47,6 +47,7 @@ export const api = {
   completeStaffProfile: (id: string, data: any) => request<any>(`/staff/${id}/complete-profile`, { method: 'PATCH', body: JSON.stringify(data) }),
   updateStaff: (id: string, data: any) => request<any>(`/staff/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteStaff: (id: string) => request<any>(`/staff/${id}`, { method: 'DELETE' }),
+  toggleStaffActive: (id: string, active: boolean) => request<any>(`/staff/${id}`, { method: 'PUT', body: JSON.stringify({ active }) }),
   registerStaff: (id: string, data: { password: string; name: string; phone: string; photo?: string }) => request<any>(`/staff/${id}/register`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Customers
@@ -54,7 +55,7 @@ export const api = {
   getCustomer: (id: string) => request<any>(`/customers/${id}`),
   createCustomer: (data: any) => request<any>('/customers', { method: 'POST', body: JSON.stringify(data) }),
   updateCustomer: (id: string, data: any) => request<any>(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteCustomer: (id: string) => request<any>(`/customers/${id}`, { method: 'DELETE' }),
+  toggleCustomerActive: (id: string, active: boolean) => request<any>(`/customers/${id}`, { method: 'PUT', body: JSON.stringify({ active }) }),
 
   // Shipments
   getShipments: (params?: { status?: string; customerId?: string }) => {

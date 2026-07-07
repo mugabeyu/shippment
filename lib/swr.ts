@@ -60,8 +60,13 @@ export function useStaff() {
     await api.deleteStaff(id);
     mutate((prev) => (prev ?? []).filter((s: any) => s.id !== id), false);
   }, [mutate]);
+  const toggleStaffActive = useCallback(async (id: string, active: boolean) => {
+    const updated = await api.toggleStaffActive(id, active);
+    mutate((prev) => (prev ?? []).map((s: any) => (s.id === id ? updated : s)), false);
+    return updated;
+  }, [mutate]);
 
-  return { staff, loading: isLoading, error: error?.message, reload: () => mutate(), inviteStaff, resendStaffInvite, completeStaffProfile, updateStaff, deleteStaff };
+  return { staff, loading: isLoading, error: error?.message, reload: () => mutate(), inviteStaff, resendStaffInvite, completeStaffProfile, updateStaff, deleteStaff, toggleStaffActive };
 }
 
 export function useCustomers() {
@@ -78,12 +83,13 @@ export function useCustomers() {
     mutate((prev) => (prev ?? []).map((c: any) => (c.id === id ? updated : c)), false);
     return updated;
   }, [mutate]);
-  const deleteCustomer = useCallback(async (id: string) => {
-    await api.deleteCustomer(id);
-    mutate((prev) => (prev ?? []).filter((c: any) => c.id !== id), false);
+  const toggleCustomerActive = useCallback(async (id: string, active: boolean) => {
+    const updated = await api.toggleCustomerActive(id, active);
+    mutate((prev) => (prev ?? []).map((c: any) => (c.id === id ? updated : c)), false);
+    return updated;
   }, [mutate]);
 
-  return { customers, loading: isLoading, error: error?.message, reload: () => mutate(), addCustomer, updateCustomer, deleteCustomer };
+  return { customers, loading: isLoading, error: error?.message, reload: () => mutate(), addCustomer, updateCustomer, toggleCustomerActive };
 }
 
 export function useShipments() {

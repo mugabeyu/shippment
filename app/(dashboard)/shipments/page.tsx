@@ -58,8 +58,36 @@ export default function Shipments() {
         ? activeOffer.discountAmount
         : 0
     : 0;
-  const estimatedTotal = Math.max(0, basePrice - offerDiscount);
+
+  const selectedCustomer = customers.find((c) => c.id === newShipment.customerId);
+  const loyaltyOffers = offers.filter((o) => o.active && o.targetKg > 0 && o.rewardKg > 0);
+  const pricePerKg = basePrice / Math.max(1, (newShipment.weightKg || 0) * (newShipment.quantity || 1));
+  const customerTotalKg = selectedCustomer?.totalKgSent || 0;
+  const loyaltyDiscount = loyaltyOffers.reduce((sum, offer) => {
+    const freeKg = Math.max(0, Math.min(customerTotalKg - offer.targetKg, offer.rewardKg));
+    return sum + (freeKg > 0 ? Math.round(freeKg * pricePerKg) : 0);
+  }, 0);
+  const totalDiscount = offerDiscount + loyaltyDiscount;
+  const estimatedTotal = Math.max(0, basePrice - totalDiscount);
   const currency = settings?.currency || defaults.currency || 'MGA';
+
+  useEffect(() => {
+    console.log('[Loyalty Debug]', {
+      customerId: newShipment.customerId,
+      customerName: selectedCustomer?.name,
+      customerTotalKg,
+      offersCount: offers.length,
+      activeOffers: offers.filter(o => o.active).map(o => ({ id: o.id, name: o.name, discountPercent: o.discountPercent, discountAmount: o.discountAmount, targetKg: o.targetKg, rewardKg: o.rewardKg })),
+      loyaltyOffersCount: loyaltyOffers.length,
+      loyaltyOffers: loyaltyOffers.map(o => ({ id: o.id, name: o.name, targetKg: o.targetKg, rewardKg: o.rewardKg })),
+      basePrice,
+      pricePerKg,
+      offerDiscount,
+      loyaltyDiscount,
+      totalDiscount,
+      estimatedTotal
+    });
+  }, [newShipment.customerId, offers, loyaltyOffers, selectedCustomer, basePrice, pricePerKg, offerDiscount, loyaltyDiscount, totalDiscount, estimatedTotal]);
 
   useEffect(() => {
     if (settings?.paymentMethods?.length) {
@@ -478,12 +506,61 @@ export default function Shipments() {
                       <span>Subtotal</span>
                       <span>{basePrice.toLocaleString()} {currency}</span>
                     </div>
-                    {offerDiscount > 0 && (
-                      <div className="flex justify-between text-green-700">
-                        <span>Offer discount</span>
-                        <span>- {offerDiscount.toLocaleString()} {currency}</span>
+
+                    {activeOffer ? (
+                      <>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Active offer</span>
+                          <span>{activeOffer.name}</span>
+                        </div>
+                        {activeOffer.discountPercent > 0 && (
+                          <div className="flex justify-between text-green-700">
+                            <span>Offer discount ({activeOffer.discountPercent}%)</span>
+                            <span>- {offerDiscount.toLocaleString()} {currency}</span>
+                          </div>
+                        )}
+                        {activeOffer.discountAmount > 0 && (
+                          <div className="flex justify-between text-green-700">
+                            <span>Offer discount (fixed)</span>
+                            <span>- {activeOffer.discountAmount.toLocaleString()} {currency}</span>
+                          </div>
+                        )}
+                        {activeOffer.discountPercent === 0 && activeOffer.discountAmount === 0 && (
+                          <div className="flex justify-between text-slate-500">
+                            <span>Offer discount</span>
+                            <span>No percentage or fixed discount set on this offer</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex justify-between text-slate-500">
+                        <span>Active offer</span>
+                        <span>No active offer</span>
                       </div>
                     )}
+
+                    {selectedCustomer && loyaltyOffers.length > 0 && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>Customer total kg</span>
+                        <span>{customerTotalKg} kg</span>
+                      </div>
+                    )}
+                    {selectedCustomer && loyaltyOffers.length > 0 && loyaltyOffers.map((offer) => {
+                      const freeKg = Math.max(0, Math.min(customerTotalKg - offer.targetKg, offer.rewardKg));
+                      return (
+                        <div key={offer.id} className="flex justify-between text-slate-600">
+                          <span>Loyalty: {offer.name} (target {offer.targetKg}kg, reward {offer.rewardKg}kg)</span>
+                          <span>{freeKg > 0 ? `${freeKg} kg free = ${Math.round(freeKg * pricePerKg).toLocaleString()} ${currency}` : `need ${offer.targetKg - customerTotalKg} kg more`}</span>
+                        </div>
+                      );
+                    })}
+                    {loyaltyDiscount > 0 && (
+                      <div className="flex justify-between text-green-700">
+                        <span>Loyalty discount</span>
+                        <span>- {loyaltyDiscount.toLocaleString()} {currency}</span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between text-navy-900 font-bold pt-2 border-t border-slate-200">
                       <span>Estimated total</span>
                       <span>{estimatedTotal.toLocaleString()} {currency}</span>

@@ -68,7 +68,7 @@ export default function Profile() {
       department: formData.department,
       photo: formData.photo
     });
-    setActiveStaff(formData.name, formData.email, updated?.photo ?? formData.photo);
+    setActiveStaff(formData.name, formData.email, formData.role, updated?.photo ?? formData.photo);
     setIsEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
