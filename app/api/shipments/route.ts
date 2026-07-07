@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { mapShipment } from '@/lib/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json(data);
+    return NextResponse.json(data.map(mapShipment));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
     let discountAmount = 0;
     const { data: activeOffer } = await supabase()
       .from('offers')
-      .select('discount_percent, discount_amount')
+      .select('discount_percent, discount_amount, target_kg, reward_kg')
       .eq('active', true)
       .maybeSingle();
 
@@ -72,32 +73,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Loyalty discount: for active offers with target_kg/reward_kg,
-    // give free kg proportional to how far the customer exceeded the target.
-    const { data: loyaltyOffers } = await supabase()
-      .from('offers')
-      .select('target_kg, reward_kg')
-      .eq('active', true)
-      .gt('target_kg', 0)
-      .gt('reward_kg', 0);
+    const totalWeight = (weightKg || 0) * (quantity || 1);
 
-    if (loyaltyOffers && loyaltyOffers.length > 0 && customerId) {
-      const { data: customer } = await supabase()
+    // Cumulative loyalty: grant reward when customer's lifetime kg crosses a target milestone
+    if (activeOffer && Number(activeOffer.target_kg) > 0 && Number(activeOffer.reward_kg) > 0 && customerId) {
+      const { data: customerData } = await supabase()
         .from('customers')
         .select('total_kg_sent')
         .eq('id', customerId)
         .single();
 
-      const customerTotalKg = customer?.total_kg_sent || 0;
-      const pricePerKg = basePrice / Math.max(1, (weightKg || 0) * (quantity || 1));
+      const prevKg = customerData?.total_kg_sent || 0;
+      const newKg = prevKg + totalWeight;
+      const target = Number(activeOffer.target_kg);
+      const reward = Number(activeOffer.reward_kg);
 
-      for (const offer of loyaltyOffers) {
-        const target = Number(offer.target_kg);
-        const reward = Number(offer.reward_kg);
-        const freeKg = Math.max(0, Math.min(customerTotalKg - target, reward));
-        if (freeKg > 0) {
-          discountAmount += Math.round(freeKg * pricePerKg);
-        }
+      const milestonesBefore = Math.floor(prevKg / target);
+      const milestonesAfter = Math.floor(newKg / target);
+      const earned = Math.max(0, milestonesAfter - milestonesBefore);
+      const milestonesEarned = Math.min(1, earned);
+
+      if (milestonesEarned > 0) {
+        const pricePerKg = Math.round(basePrice / Math.max(1, totalWeight));
+        discountAmount += Math.round(reward * pricePerKg);
       }
     }
 
@@ -157,7 +155,7 @@ export async function POST(req: NextRequest) {
         .eq('id', customerId);
     }
 
-    return NextResponse.json(shipment, { status: 201 });
+    return NextResponse.json(mapShipment(shipment), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

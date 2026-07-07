@@ -41,15 +41,15 @@ export default function Activity() {
   const uniqueActions = Array.from(new Set(logs.map((l) => action(l)))).sort();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading activity...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading activity...</div>;
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-navy-900">Activity</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Every action performed across the system, and who did it.</p>
+          <h1 className="text-lg font-semibold text-white/90">Activity</h1>
+          <p className="text-sm text-white/40 mt-0.5">Every action performed across the system, and who did it.</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default function Activity() {
       )}
 
       <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/[0.06] flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -85,7 +85,7 @@ export default function Activity() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">No activity to display.</div>
+          <div className="p-8 text-center text-white/40">No activity to display.</div>
         ) : (
           <div className="divide-y divide-slate-200">
             {filtered.map((log) => (
@@ -95,7 +95,7 @@ export default function Activity() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <h3 className="text-sm font-semibold text-navy-900">{formatAction(action(log))}</h3>
+                    <h3 className="text-sm font-semibold text-white/90">{formatAction(action(log))}</h3>
                     <span className="flex items-center text-xs text-slate-400 shrink-0">
                       <Clock className="w-3.5 h-3.5 mr-1" />
                       {createdAt(log) ? new Date(createdAt(log)).toLocaleString() : '—'}
@@ -104,7 +104,7 @@ export default function Activity() {
                   {summarizeDetails(details(log)) && (
                     <p className="text-sm text-slate-600 leading-relaxed">{summarizeDetails(details(log))}</p>
                   )}
-                  <div className="flex items-center mt-1.5 text-xs text-slate-500">
+                  <div className="flex items-center mt-1.5 text-xs text-white/40">
                     <User className="w-3.5 h-3.5 mr-1.5" />
                     <span className="font-medium text-slate-700">{staffName(log) || 'System'}</span>
                     {staffEmail(log) && <span className="ml-1">({staffEmail(log)})</span>}

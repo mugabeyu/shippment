@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { mapShipment } from '@/lib/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       trackingNumber: data.tracking_number,
       status
     });
-    return NextResponse.json(data);
+    return NextResponse.json(mapShipment(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

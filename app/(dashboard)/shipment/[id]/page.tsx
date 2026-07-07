@@ -10,14 +10,19 @@ import {
   DollarSign,
   Package,
   FileText,
+  Share2,
   MessageCircle,
   Truck,
   CheckCircle,
   XCircle,
   ClipboardList,
-  Mail
+  Mail,
+  Download,
+  X
 } from 'lucide-react';
-import { generateReceiptPDF, whatsappReceiptText } from '@/lib/exports';
+import { generateReceiptPDF, generateReceiptBlob, whatsappReceiptText } from '@/lib/exports';
+import ReceiptContent from '@/components/ReceiptContent';
+import { useToast } from '@/lib/toast';
 
 const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   Package, ClipboardList, Truck, MapPin, CheckCircle, XCircle
@@ -37,6 +42,7 @@ export default function ShipmentDetail() {
   const { settings, loading: settingsLoading } = useSettings();
   const { createNotification } = useNotifications();
   const { config } = useAppConfig();
+  const { toast } = useToast();
   const timelineSteps: TimelineStep[] = (config?.timeline_steps || []).map((step: any) => ({
     ...step,
     icon: ICON_MAP[step.icon] || Package
@@ -47,20 +53,21 @@ export default function ShipmentDetail() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editNotes, setEditNotes] = useState('');
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const isLoading = shipmentsLoading || settingsLoading;
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading shipment details...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading shipment details...</div>;
   }
 
   if (!shipment) {
     return (
       <div className="space-y-5">
-        <button onClick={() => router.push('/shipments')} className="flex items-center text-primary hover:text-primary-700 transition-colors">
+        <button onClick={() => router.push('/shipments')} className="flex items-center text-primary hover:text-primary-400 transition-colors">
           <ArrowLeft className="w-5 h-5 mr-2" /> Back to Shipments
         </button>
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500">Shipment not found.</div>
+        <div className="bg-white border border-white/[0.06] rounded-2xl p-8 text-center text-white/40">Shipment not found.</div>
       </div>
     );
   }
@@ -84,43 +91,88 @@ export default function ShipmentDetail() {
     }
   };
 
-  const handlePDF = () => {
-    if (!customer || !settings) return;
-    generateReceiptPDF(shipment, customer, settings);
+  const handlePDF = async () => {
+    const el = document.getElementById('receipt-root');
+    if (el) await generateReceiptPDF(el, shipment.trackingNumber);
   };
 
-  const handleWhatsApp = () => {
+  const handleShareReceipt = async () => {
+    try {
+      const el = document.getElementById('receipt-root');
+      if (!el) return;
+      const blob = await generateReceiptBlob(el);
+      const file = new File([blob], `Receipt.pdf`, { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Receipt', files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch {
+      handlePDF();
+    }
+  };
+
+  const handleWhatsApp = async () => {
     if (!customer || !settings) return;
-    const text = whatsappReceiptText(shipment, settings);
-    const url = `https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    // Open receipt modal first to capture
+    setShowReceipt(true);
+    setTimeout(async () => {
+      try {
+        const el = document.getElementById('receipt-root');
+        if (el) {
+          const blob = await generateReceiptBlob(el);
+          const file = new File([blob], `Receipt-${shipment.trackingNumber}.pdf`, { type: 'application/pdf' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: `Receipt ${shipment.trackingNumber}`, files: [file] });
+          }
+        }
+      } catch { /* fallback */ }
+      const phone = customer.phone.replace(/[^0-9]/g, '');
+      const text = whatsappReceiptText(shipment, settings);
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    }, 300);
   };
 
   return (
     <div className="space-y-5">
-      <button onClick={() => router.push('/shipments')} className="flex items-center text-primary hover:text-primary-700 transition-colors">
+      <button onClick={() => router.push('/shipments')} className="flex items-center text-primary hover:text-primary-400 transition-colors">
         <ArrowLeft className="w-5 h-5 mr-2" /> Back to Shipments
       </button>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-navy-900">{shipment.trackingNumber}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Shipment details and status tracking</p>
+          <h1 className="text-xl font-bold text-white/90">{shipment.trackingNumber}</h1>
+          <p className="text-sm text-white/40 mt-0.5">Shipment details and status tracking</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={handlePDF} className="flex items-center px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition-colors">
-            <FileText className="w-4 h-4 mr-2" /> PDF Receipt
+          <button onClick={() => setShowReceipt(true)} className="btn-primary">
+            <FileText className="w-4 h-4 mr-2" /> View Receipt
           </button>
-          <button onClick={handleWhatsApp} className="flex items-center px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+          <button onClick={handleShareReceipt} className="btn-secondary">
+            <Share2 className="w-4 h-4 mr-2" /> Share
+          </button>
+          <button onClick={handleWhatsApp} className="btn-secondary">
             <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
           </button>
+          {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
+            <button
+              onClick={() => {
+                updateShipmentStatus(shipment.id, 'Delivered');
+                toast('success', `${shipment.trackingNumber} marked Delivered ✓`);
+              }}
+              className="px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl hover:from-emerald-500 hover:to-emerald-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Mark Delivered
+            </button>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-navy-900 mb-4">Shipment Timeline</h3>
+          <div className="card p-6">
+            <h3 className="text-base font-semibold text-white/90 mb-4">Shipment Timeline</h3>
             <div className="flex items-center justify-between relative">
               <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-200 -translate-y-1/2"></div>
               {timelineSteps.map((step, idx) => {
@@ -129,16 +181,16 @@ export default function ShipmentDetail() {
                 const current = idx === statusIdx;
                 return (
                   <div key={step.key} className="relative flex flex-col items-center z-10">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${current ? 'bg-primary text-white ring-4 ring-primary/20' : completed ? 'bg-primary text-white' : 'bg-slate-200 text-slate-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${current ? 'bg-primary text-white ring-4 ring-primary/20' : completed ? 'bg-primary text-white' : 'bg-slate-100 text-white/25 border border-white/[0.06]'}`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className={`text-xs mt-2 font-medium ${current ? 'text-primary' : completed ? 'text-navy-900' : 'text-slate-400'}`}>{step.label}</span>
+                    <span className={`text-xs mt-2 font-medium ${current ? 'text-primary' : completed ? 'text-white/90' : 'text-white/25'}`}>{step.label}</span>
                   </div>
                 );
               })}
             </div>
             <div className="mt-6">
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">Update Status</label>
+              <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-2">Update Status</label>
               <select
                 value={shipment.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
@@ -152,55 +204,55 @@ export default function ShipmentDetail() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-navy-900 mb-4">Shipment Details</h3>
+          <div className="card p-6">
+            <h3 className="text-base font-semibold text-white/90 mb-4">Shipment Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Origin</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <MapPin className="w-4 h-4 text-slate-400" /> {shipment.origin}
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Origin</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <MapPin className="w-4 h-4 text-white/25" /> {shipment.origin}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Destination</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <MapPin className="w-4 h-4 text-slate-400" /> {shipment.destination}
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Destination</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <MapPin className="w-4 h-4 text-white/25" /> {shipment.destination}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Category</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <Package className="w-4 h-4 text-slate-400" /> {shipment.category}
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Category</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <Package className="w-4 h-4 text-white/25" /> {shipment.category}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Weight</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <DollarSign className="w-4 h-4 text-slate-400" /> {shipment.weightKg} kg
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Weight</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <DollarSign className="w-4 h-4 text-white/25" /> {shipment.weightKg} kg
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Quantity</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <Package className="w-4 h-4 text-slate-400" /> {shipment.quantity} items
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Quantity</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <Package className="w-4 h-4 text-white/25" /> {shipment.quantity} items
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Date</label>
-                <div className="flex items-center gap-2 text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">
-                  <Calendar className="w-4 h-4 text-slate-400" /> {shipment.date}
+                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Date</label>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
+                  <Calendar className="w-4 h-4 text-white/25" /> {shipment.date}
                 </div>
               </div>
               {shipment.description && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Description</label>
-                  <p className="text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">{shipment.description}</p>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Description</label>
+                  <p className="text-sm text-white/80 bg-slate-50 border border-white/[0.06] rounded-xl p-3">{shipment.description}</p>
                 </div>
               )}
               {shipment.specialInstructions && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Special Instructions</label>
-                  <p className="text-sm text-navy-900 bg-slate-50 p-3 rounded-lg">{shipment.specialInstructions}</p>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Special Instructions</label>
+                  <p className="text-sm text-white/80 bg-slate-50 border border-white/[0.06] rounded-xl p-3">{shipment.specialInstructions}</p>
                 </div>
               )}
             </div>
@@ -208,91 +260,123 @@ export default function ShipmentDetail() {
         </div>
 
         <div className="space-y-5">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-navy-900 mb-4">Customer</h3>
+          <div className="card p-6">
+            <h3 className="text-base font-semibold text-white/90 mb-4">Customer</h3>
             {customer && (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-white/[0.06] flex items-center justify-center">
                     {customer.photo ? (
-                      <img src={customer.photo} alt={customer.name} className="w-full h-full object-cover rounded-full" />
+                      <img src={customer.photo} alt={customer.name} className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       <span className="text-sm font-bold text-navy-700">{customer.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}</span>
                     )}
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-navy-900">{customer.name}</div>
-                    <div className="text-xs text-slate-500">{customer.phone}</div>
+                    <div className="text-sm font-semibold text-white/90">{customer.name}</div>
+                    <div className="text-xs text-white/40">{customer.phone}</div>
                   </div>
                 </div>
                 {customer.address && (
-                  <div className="flex items-start gap-2 text-sm text-slate-600">
-                    <MapPin className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div className="flex items-start gap-2 text-sm text-white/60">
+                    <MapPin className="w-4 h-4 text-white/25 mt-0.5 shrink-0" />
                     <span>{customer.address}</span>
                   </div>
                 )}
                 {customer.email && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-sm text-white/60">
+                    <Mail className="w-4 h-4 text-white/25 shrink-0" />
                     <span>{customer.email}</span>
                   </div>
                 )}
-                <button onClick={() => router.push(`/customers/${customer.id}`)} className="w-full mt-2 px-4 py-2 text-sm font-medium text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">
+                <button onClick={() => router.push(`/customers/${customer.id}`)} className="w-full mt-2 px-4 py-2 text-sm font-medium text-primary border border-primary/20 rounded-xl hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02]">
                   View Full Profile
                 </button>
               </div>
             )}
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-navy-900 mb-4">Payment</h3>
+          <div className="card p-6">
+            <h3 className="text-base font-semibold text-white/90 mb-4">Payment</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Weight</span>
-                <span className="font-medium text-navy-900">{shipment.weightKg} kg</span>
+                <span className="text-white/60">Weight</span>
+                <span className="font-medium text-white/90">{shipment.weightKg} kg</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Rate</span>
-                <span className="font-medium text-navy-900">{settings?.defaultRatePerKg?.toLocaleString()} {settings?.currency}</span>
+                <span className="text-white/60">Rate</span>
+                <span className="font-medium text-white/90">{settings?.defaultRatePerKg?.toLocaleString()} {settings?.currency}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Method</span>
-                <span className="font-medium text-navy-900">{shipment.paymentMethod}</span>
+                <span className="text-white/60">Method</span>
+                <span className="font-medium text-white/90">{shipment.paymentMethod}</span>
               </div>
-              <div className="flex items-center justify-between text-sm pt-3 border-t border-slate-200">
-                <span className="text-slate-600">Total</span>
-                <span className="font-bold text-navy-900 text-lg">{fmtCost}</span>
+              <div className="flex items-center justify-between text-sm pt-3 border-t border-white/[0.06]">
+                <span className="text-white/60">Total</span>
+                <span className="font-bold text-white/90 text-lg">{cost.toLocaleString()} {settings?.currency || 'MGA'}</span>
               </div>
-              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-200' : 'bg-amber-500/10 text-amber-400 border border-amber-200'}`}>
                 {shipment.paymentStatus}
               </span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-navy-900 mb-4">Internal Notes</h3>
+          <div className="card p-6">
+            <h3 className="text-base font-semibold text-white/90 mb-4">Internal Notes</h3>
             {isEditing ? (
               <div className="space-y-3">
-                <textarea
-                  rows={3}
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Add internal notes..."
-                  className="input-field resize-none"
-                />
+                <textarea rows={3} value={editNotes} onChange={(e) => setEditNotes(e.target.value)} placeholder="Add internal notes..." className="input-field resize-none" />
                 <div className="flex gap-2">
-                  <button onClick={() => { setIsEditing(false); setEditNotes(''); }} className="px-3 py-2 text-sm text-slate-600 hover:text-navy-900">Cancel</button>
-                  <button onClick={() => { setIsEditing(false); setEditNotes(''); }} className="px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700">Save</button>
+                  <button onClick={() => { setIsEditing(false); }} className="px-3 py-2 text-sm text-white/40 hover:text-white transition-colors rounded-xl">Cancel</button>
+                  <button onClick={() => setIsEditing(false)} className="btn-primary">Save Notes</button>
                 </div>
               </div>
             ) : (
-              <div onClick={() => { setEditNotes(shipment.internalNotes || ''); setIsEditing(true); }} className="cursor-pointer">
-                <p className="text-sm text-slate-600">{shipment.internalNotes || 'No notes yet. Click to add.'}</p>
+              <div onClick={() => { setEditNotes(shipment.internalNotes || ''); setIsEditing(true); }} className="cursor-pointer rounded-xl p-2 hover:bg-white/[0.03] transition-colors">
+                <p className="text-sm text-white/40">{shipment.internalNotes || 'No notes yet. Click to add.'}</p>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {showReceipt && shipment && (() => {
+        const cus = customer;
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowReceipt(false)}>
+            <div className="bg-[#12141C] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-navy-800 border-b border-white/10 px-5 py-4 flex items-center justify-between shrink-0">
+                <div>
+                  <h2 className="font-bold text-lg text-white">Receipt</h2>
+                  <p className="text-xs text-blue-300">{shipment.trackingNumber}</p>
+                </div>
+                <button onClick={() => setShowReceipt(false)} className="text-white/60 hover:text-white hover:rotate-90 transition-all duration-300 p-1.5 rounded-xl hover:bg-white/10">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto flex-1" id="receipt-root">
+                <ReceiptContent shipment={shipment} customer={cus} settings={settings} />
+              </div>
+              <div className="px-5 py-4 border-t border-white/[0.08] flex gap-3 shrink-0">
+                <button onClick={handleShareReceipt} className="btn-secondary flex-1">
+                  <Share2 className="w-4 h-4 mr-2" /> Share PDF
+                </button>
+                {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
+                  <button
+                    onClick={() => {
+                      updateShipmentStatus(shipment.id, 'Delivered');
+                      toast('success', `${shipment.trackingNumber} marked Delivered ✓`);
+                      setShowReceipt(false);
+                    }}
+                    className="btn-primary flex-1 bg-emerald-600 hover:bg-emerald-700">
+                    <CheckCircle className="w-4 h-4 mr-2" /> Mark Delivered
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

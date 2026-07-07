@@ -136,38 +136,38 @@ function StaffRegisterInner() {
 
   if (verifying) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-slate-500">Verifying invitation...</div>
+      <div className="min-h-screen bg-[#12141C] flex items-center justify-center">
+        <div className="text-white/40">Verifying invitation...</div>
       </div>
     );
   }
 
   if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-slate-500">Preparing your account...</div>
+      <div className="min-h-screen bg-[#12141C] flex items-center justify-center">
+        <div className="text-white/40">Preparing your account...</div>
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#12141C] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center space-y-4">
-          <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-          <h2 className="text-xl font-bold text-navy-900">Registration Complete</h2>
-          <p className="text-sm text-slate-600">Your account has been created. Redirecting to login...</p>
+          <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto" />
+          <h2 className="text-xl font-bold text-white/90">Registration Complete</h2>
+          <p className="text-sm text-white/60">Your account has been created. Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-[#12141C] flex">
       <div className="hidden lg:flex lg:w-[58%] bg-navy-900 relative overflow-hidden">
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-16 h-full">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-11 h-11 bg-[#12141C]/10 backdrop-blur-sm border border-white/20 rounded-xl flex items-center justify-center">
               <Ship className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -194,28 +194,28 @@ function StaffRegisterInner() {
               <Ship className="w-6 h-6 text-white" />
             </div>
              <div>
-                <h1 className="text-xl font-bold text-navy-900">{registerContent.companyName || 'La Grande Marque'}</h1>
-                <p className="text-xs text-slate-500 font-medium">{registerContent.companyTagline || 'Shipping & Logistics Management'}</p>
+                <h1 className="text-xl font-bold text-white/90">{registerContent.companyName || 'La Grande Marque'}</h1>
+                <p className="text-xs text-white/40 font-medium">{registerContent.companyTagline || 'Shipping & Logistics Management'}</p>
              </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-xl p-8">
+          <div className="bg-[#12141C] border border-white/[0.06] rounded-3xl shadow-xl p-8">
             <div className="text-center mb-8">
-              <h2 className="text-[32px] font-bold text-navy-900 leading-tight tracking-tight">Complete Registration</h2>
-              <p className="text-sm text-slate-500 mt-3">
+              <h2 className="text-[32px] font-bold text-white/90 leading-tight tracking-tight">Complete Registration</h2>
+              <p className="text-sm text-white/40 mt-3">
                 You've been invited to join <span className="font-semibold">{staff?.email}</span>
               </p>
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
-                <p className="text-sm text-red-600 font-medium">{error}</p>
+              <div className="mb-6 p-4 bg-red-500/10 border-red-500/20 rounded-xl animate-fade-in">
+                <p className="text-sm text-red-400 font-medium">{error}</p>
               </div>
             )}
 
             {staff?.active ? (
               <div className="text-center py-8 space-y-4">
-                <p className="text-slate-500">This account is already active.</p>
+                <p className="text-white/40">This account is already active.</p>
                 <button
                   type="button"
                   onClick={() => router.replace('/login')}
@@ -226,15 +226,15 @@ function StaffRegisterInner() {
               </div>
             ) : cameFromEmail ? (
               <form onSubmit={handleSubmit} className="space-y-5">
-                <p className="text-sm text-slate-500 text-center">
+                <p className="text-sm text-white/40 text-center">
                   Your password is set. Complete your profile to finish signing in.
                 </p>
                 <div className="flex justify-center mb-4">
-                  <label className="relative w-20 h-20 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden">
+                  <label className="relative w-20 h-20 rounded-full bg-white/[0.04] border-2 border-dashed border-white/[0.10] flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden">
                     {photoPreview ? (
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera className="w-6 h-6 text-slate-400" />
+                      <Camera className="w-6 h-6 text-white/25" />
                     )}
                     <input
                       type="file"
@@ -246,11 +246,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Full Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <User className="w-5 h-5" />
                     </div>
                     <input
@@ -265,11 +265,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Phone Number
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <Phone className="w-5 h-5" />
                     </div>
                     <input
@@ -304,11 +304,11 @@ function StaffRegisterInner() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="flex justify-center mb-4">
-                  <label className="relative w-20 h-20 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden">
+                  <label className="relative w-20 h-20 rounded-full bg-white/[0.04] border-2 border-dashed border-white/[0.10] flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden">
                     {photoPreview ? (
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera className="w-6 h-6 text-slate-400" />
+                      <Camera className="w-6 h-6 text-white/25" />
                     )}
                     <input
                       type="file"
@@ -320,11 +320,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Full Name
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <User className="w-5 h-5" />
                     </div>
                     <input
@@ -339,11 +339,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Phone Number
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <Phone className="w-5 h-5" />
                     </div>
                     <input
@@ -358,11 +358,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <Lock className="w-5 h-5" />
                     </div>
                     <input
@@ -378,11 +378,11 @@ function StaffRegisterInner() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                       <Lock className="w-5 h-5" />
                     </div>
                     <input
@@ -418,7 +418,7 @@ function StaffRegisterInner() {
             )}
           </div>
 
-          <div className="mt-6 flex items-center justify-between text-xs text-slate-400">
+          <div className="mt-6 flex items-center justify-between text-xs text-white/25">
             <p className="font-medium">{registerContent.copyright || '© 2026 La Grande Marque'}</p>
             <p className="font-medium">Secure Staff Registration</p>
           </div>
@@ -430,7 +430,7 @@ function StaffRegisterInner() {
 
 export default function StaffRegister() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-slate-500">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#12141C] flex items-center justify-center"><div className="text-white/40">Loading...</div></div>}>
       <StaffRegisterInner />
     </Suspense>
   );

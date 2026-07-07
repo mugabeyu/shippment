@@ -133,6 +133,17 @@ export interface Receipt {
   createdAt?: string;
 }
 
+export interface Expense {
+  id: string;
+  date: string;
+  category: string;
+  amount: number;
+  note: string;
+  attachmentUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 interface UiState {
   sidebarOpen: boolean;
   activeStaffName: string;

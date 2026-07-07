@@ -24,7 +24,7 @@ const fetcher = (key: [string, ...any[]]) => {
   }
 };
 
-export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route } from './store';
+export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route, Expense } from './store';
 
 let configCache: Record<string, any> | null = null;
 
@@ -213,6 +213,28 @@ export function useAuditLogs() {
     return created;
   }, [mutate]);
   return { logs, loading: isLoading, error: error?.message, reload: () => mutate(), createAuditLog };
+}
+
+export function useExpenses() {
+  const { data, error, isLoading, mutate } = useSWR('expenses', () => api.getExpenses());
+  const expenses = data ?? [];
+
+  const addExpense = useCallback(async (data: any) => {
+    const created = await api.createExpense(data);
+    mutate((prev) => [created, ...(prev ?? [])], false);
+    return created;
+  }, [mutate]);
+  const updateExpense = useCallback(async (id: string, data: any) => {
+    const updated = await api.updateExpense(id, data);
+    mutate((prev) => (prev ?? []).map((e: any) => (e.id === id ? updated : e)), false);
+    return updated;
+  }, [mutate]);
+  const deleteExpense = useCallback(async (id: string) => {
+    await api.deleteExpense(id);
+    mutate((prev) => (prev ?? []).filter((e: any) => e.id !== id), false);
+  }, [mutate]);
+
+  return { expenses, loading: isLoading, error: error?.message, reload: () => mutate(), addExpense, updateExpense, deleteExpense };
 }
 
 export function useRoutes() {

@@ -27,15 +27,15 @@ export default function AuditLogs() {
   const uniqueActions = Array.from(new Set(logs.map((l) => l.action))).sort();
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading audit logs...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading audit logs...</div>;
   }
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-navy-900">Audit Logs</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Track every admin activity across the system.</p>
+          <h1 className="text-lg font-semibold text-white/90">Audit Logs</h1>
+          <p className="text-sm text-white/40 mt-0.5">Track every admin activity across the system.</p>
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export default function AuditLogs() {
       )}
 
       <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/[0.06] flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -72,7 +72,7 @@ export default function AuditLogs() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+            <thead className="text-xs text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium">Action</th>
                 <th className="px-6 py-4 font-medium">Staff</th>
@@ -90,21 +90,21 @@ export default function AuditLogs() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-navy-900 font-medium">{log.staffName || 'System'}</div>
-                    <div className="text-xs text-slate-500">{log.staffEmail || 'N/A'}</div>
+                    <div className="text-white/90 font-medium">{log.staffName || 'System'}</div>
+                    <div className="text-xs text-white/40">{log.staffEmail || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 text-xs text-slate-600">
                     {JSON.stringify(log.details || {}).substring(0, 100) || '—'}
                   </td>
-                  <td className="px-6 py-4 text-xs text-slate-500">{log.ipAddress || '—'}</td>
-                  <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
+                  <td className="px-6 py-4 text-xs text-white/40">{log.ipAddress || '—'}</td>
+                  <td className="px-6 py-4 text-xs text-white/40 whitespace-nowrap">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No audit logs found.</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">No audit logs found.</td>
                 </tr>
               )}
             </tbody>

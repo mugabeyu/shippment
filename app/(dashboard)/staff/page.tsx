@@ -76,7 +76,7 @@ export default function Staff() {
   );
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading staff...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading staff...</div>;
   }
 
   return (
@@ -89,8 +89,8 @@ export default function Staff() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-navy-900">Staff Management</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Invite new staff and approve pending access.</p>
+          <h1 className="text-lg font-semibold text-white/90">Staff Management</h1>
+          <p className="text-sm text-white/40 mt-0.5">Invite new staff and approve pending access.</p>
         </div>
         <button
           onClick={openInvite}
@@ -102,7 +102,7 @@ export default function Staff() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-white/[0.06]">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -119,7 +119,7 @@ export default function Staff() {
           {filteredStaff.map((s) => (
             <div key={s.id} className="card p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 rounded-full bg-[#12141C]/[0.04] border border-white/[0.06] flex items-center justify-center overflow-hidden">
                   {s.photo ? (
                     <img src={s.photo} alt={s.name} className="w-full h-full object-cover" />
                   ) : s.name ? (
@@ -127,13 +127,13 @@ export default function Staff() {
                       {s.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                     </span>
                   ) : (
-                    <Mail className="w-6 h-6 text-slate-500" />
+                    <Mail className="w-6 h-6 text-white/40" />
                   )}
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-navy-900">{s.name || 'Pending Invite'}</h3>
+                  <h3 className="text-base font-semibold text-white/90">{s.name || 'Pending Invite'}</h3>
                   <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                    s.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                    s.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-[#12141C]/[0.04] text-slate-600'
                   }`}>
                     {s.role}
                   </span>
@@ -152,7 +152,7 @@ export default function Staff() {
                   </div>
                 )}
                 <div className="flex items-center">
-                  <span className="text-slate-500 mr-2">Status:</span>
+                  <span className="text-white/40 mr-2">Status:</span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     s.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>
@@ -162,13 +162,13 @@ export default function Staff() {
               </div>
 
               {!s.active && (
-                <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Assign Role</span>
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Assign Role</span>
                     <select
                       value={approvingId === s.id ? approvingRole : (s.role === 'Admin' ? 'Admin' : 'Staff')}
                       onChange={(e) => { setApprovingId(s.id); setApprovingRole(e.target.value as 'Admin' | 'Staff'); }}
-                      className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-navy-900 bg-white focus:outline-none focus:border-amber-500"
+                      className="text-xs border border-white/[0.06] rounded-lg px-2 py-1.5 text-white/90 bg-[#12141C] focus:outline-none focus:border-amber-500"
                     >
                       <option value="Staff">Staff</option>
                       <option value="Admin">Admin</option>
@@ -185,7 +185,7 @@ export default function Staff() {
               )}
 
               {isAdmin && (
-                <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="mt-4 pt-4 border-t border-white/[0.06]">
                   <button
                     onClick={() => handleToggleActive(s.id, s.active)}
                     disabled={sending}
@@ -213,16 +213,16 @@ export default function Staff() {
         </div>
 
         {filteredStaff.length === 0 && (
-          <div className="p-8 text-center text-slate-500">No staff found.</div>
+          <div className="p-8 text-center text-white/40">No staff found.</div>
         )}
       </div>
 
       {isInviteModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-md overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-navy-900">Invite New Staff</h2>
-              <button onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="text-slate-500 hover:text-navy-900 transition-colors">
+          <div className="bg-[#12141C] border border-white/[0.06] rounded-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-white/[0.06]">
+              <h2 className="text-lg font-semibold text-white/90">Invite New Staff</h2>
+              <button onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="text-white/40 hover:text-white/90 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -251,9 +251,9 @@ export default function Staff() {
                       <option value="Admin">Admin</option>
                     </select>
                   </div>
-                  <p className="text-xs text-slate-500">An email will be sent to the staff member with a link to set their password and complete registration. If the email doesn't arrive, you can share the registration link manually.</p>
+                  <p className="text-xs text-white/40">An email will be sent to the staff member with a link to set their password and complete registration. If the email doesn't arrive, you can share the registration link manually.</p>
                   <div className="pt-4 flex justify-end space-x-3">
-                    <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-slate-500 hover:text-navy-900 transition-colors">Cancel</button>
+                    <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">Cancel</button>
                     <button type="button" onClick={handleInvite} disabled={sending} className="btn-primary disabled:opacity-50">
                       {sending ? 'Creating Invite...' : 'Send Invitation'}
                     </button>
@@ -279,10 +279,10 @@ export default function Staff() {
                         Copy
                       </button>
                     </div>
-                     <p className="text-xs text-slate-500 mt-2">We emailed the staff member a link to set their password. If it didn't arrive, share this link manually — they will use it to set their password and log in.</p>
+                     <p className="text-xs text-white/40 mt-2">We emailed the staff member a link to set their password. If it didn't arrive, share this link manually — they will use it to set their password and log in.</p>
                   </div>
                   <div className="pt-4 flex justify-end">
-                    <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-sm text-slate-500 hover:text-navy-900 transition-colors">Close</button>
+                    <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-sm text-white/40 hover:text-white/90 transition-colors">Close</button>
                   </div>
                 </div>
               )}

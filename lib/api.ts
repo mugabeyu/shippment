@@ -120,6 +120,13 @@ export const api = {
   getAuditLog: (id: string) => request<any>(`/audit/${id}`),
   createAuditLog: (data: any) => request<any>('/audit', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Expenses
+  getExpenses: () => request<any[]>('/expenses'),
+  getExpense: (id: string) => request<any>(`/expenses/${id}`),
+  createExpense: (data: any) => request<any>('/expenses', { method: 'POST', body: JSON.stringify(data) }),
+  updateExpense: (id: string, data: any) => request<any>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteExpense: (id: string) => request<any>(`/expenses/${id}`, { method: 'DELETE' }),
+
   // Config
   getConfig: () => request<Record<string, any>>('/config'),
   getConfigKey: (key: string) => request<{ key: string; value: any }>(`/config/${encodeURIComponent(key)}`),

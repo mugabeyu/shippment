@@ -79,33 +79,33 @@ export default function ResetPassword() {
 
   if (!checked) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-slate-500">Verifying reset link...</div>
+      <div className="min-h-screen bg-[#12141C] flex items-center justify-center">
+        <div className="text-white/40">Verifying reset link...</div>
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#12141C] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center space-y-4">
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto" />
-          <h2 className="text-xl font-bold text-navy-900">Password Updated</h2>
-          <p className="text-sm text-slate-600">Your password has been changed successfully. Redirecting to login...</p>
+          <h2 className="text-xl font-bold text-white/90">Password Updated</h2>
+          <p className="text-sm text-white/60">Your password has been changed successfully. Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 sm:p-8">
+    <div className="min-h-screen bg-[#12141C] flex items-center justify-center p-6 sm:p-8">
       <div className="w-full max-w-[520px]">
-        <div className="bg-white backdrop-blur-md border border-white rounded-3xl shadow-2xl p-8">
+        <div className="bg-[#12141C] backdrop-blur-md border border-white rounded-3xl shadow-2xl p-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-5">
               <Lock className="w-7 h-7 text-primary" />
             </div>
-            <h2 className="text-[42px] font-bold text-navy-900 leading-tight tracking-tight">Reset Password</h2>
+            <h2 className="text-[42px] font-bold text-white/90 leading-tight tracking-tight">Reset Password</h2>
             <p className="text-sm text-navy-500 mt-3 leading-relaxed">
               Enter your new password below.
             </p>
@@ -114,10 +114,10 @@ export default function ResetPassword() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-red-400 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-sm text-red-600 font-medium">{error}</p>
+                <p className="text-sm text-red-400 font-medium">{error}</p>
               </div>
             </div>
           )}

@@ -228,7 +228,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen bg-white flex">
+    <div className="relative min-h-screen bg-[#12141C] flex">
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('/backgroundimage.jpeg')` }}></div>
 
       <div className="hidden lg:flex lg:w-[58%] relative overflow-hidden" style={{ height: '100vh' }}>
@@ -261,7 +261,7 @@ export default function Login() {
 
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-16 h-full">
           <div className="flex items-center space-x-3 opacity-0 animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
-            <div className="w-11 h-11 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-11 h-11 bg-[#12141C]/10 backdrop-blur-sm border border-white/[0.08]/20 rounded-xl flex items-center justify-center">
               <Ship className="w-6 h-6 text-white" />
             </div>
             <span className="text-white font-bold text-lg tracking-tight">LA GRANDE MARQUE</span>
@@ -282,8 +282,8 @@ export default function Login() {
                 const Icon = ICON_MAP[feature.icon] || Globe;
 
                 return (
-                  <div key={idx} className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 hover:bg-white/15 hover:border-white/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
-                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <div key={idx} className="group bg-[#12141C]/10 backdrop-blur-md border border-white/[0.08]/20 rounded-2xl p-5 hover:bg-[#12141C]/15 hover:border-white/[0.08]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+                    <div className="w-10 h-10 bg-[#12141C]/10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                       <Icon className="w-5 h-5 text-blue-300" />
                     </div>
                     <h3 className="text-sm font-semibold text-white mb-1">{feature.title}</h3>
@@ -301,20 +301,20 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12" style={{ height: '100vh' }}>
         <div className="w-full max-w-[520px]">
           <div className="lg:hidden flex items-center justify-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-white/30 rounded-xl flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 bg-[#12141C]/90 backdrop-blur-sm border border-white/[0.08]/30 rounded-xl flex items-center justify-center shadow-sm">
               <Ship className="w-6 h-6 text-primary" />
             </div>
           </div>
 
-          <div className="bg-white backdrop-blur-md border border-white rounded-3xl shadow-2xl p-8">
+          <div className="bg-[#12141C] backdrop-blur-md border border-white/[0.08] rounded-3xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-5">
                 <Ship className="w-7 h-7 text-primary" />
               </div>
-              <h2 className="text-[42px] font-bold text-navy-900 leading-tight tracking-tight">
+              <h2 className="text-[42px] font-bold text-white/90 leading-tight tracking-tight">
                 {isRegister ? (loginContent.registerTitle || 'Create Account') : (loginContent.welcomeTitle || 'Sign In')}
               </h2>
-              <p className="text-sm text-navy-500 mt-3 leading-relaxed">
+              <p className="text-sm text-white/40 mt-3 leading-relaxed">
                 {isRegister ? (loginContent.registerSubtitle || 'Register to request access to the admin dashboard') : (loginContent.welcomeSubtitle || 'Sign in to continue to the admin dashboard')}
               </p>
             </div>
@@ -322,23 +322,23 @@ export default function Login() {
             {!isRegister ? (
               <>
                 {formErrors.general && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
+                  <div className="mb-6 p-4 bg-red-500/10 border-red-500/20 text-red-400 rounded-xl animate-fade-in">
                     <div className="flex items-center">
-                      <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 text-red-400 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <p className="text-sm text-red-600 font-medium">{formErrors.general}</p>
+                      <p className="text-sm text-red-400 font-medium">{formErrors.general}</p>
                     </div>
                   </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
-                    <label htmlFor="email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                    <label htmlFor="email" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                       Email Address
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                         <Mail className="w-5 h-5" />
                       </div>
                       <input
@@ -349,21 +349,21 @@ export default function Login() {
                         autoComplete="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className={`input-field pl-11 ${formErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                        className={`input-field pl-11 ${formErrors.email ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                         placeholder="Enter your email"
                       />
                     </div>
                     {formErrors.email && (
-                      <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.email}</p>
+                      <p className="mt-1.5 text-xs text-red-400 font-medium">{formErrors.email}</p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                    <label htmlFor="password" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                       Password
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                         <Lock className="w-5 h-5" />
                       </div>
                       <input
@@ -374,13 +374,13 @@ export default function Login() {
                         autoComplete="current-password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`input-field pl-11 pr-12 ${formErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                        className={`input-field pl-11 pr-12 ${formErrors.password ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                         placeholder="Enter your password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-navy-400 hover:text-navy-600 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/25 hover:text-white/60 transition-colors"
                       >
                         {showPassword ? (
                           <EyeOff className="w-5 h-5" />
@@ -390,7 +390,7 @@ export default function Login() {
                       </button>
                     </div>
                     {formErrors.password && (
-                      <p className="mt-1.5 text-xs text-red-600 font-medium">{formErrors.password}</p>
+                      <p className="mt-1.5 text-xs text-red-400 font-medium">{formErrors.password}</p>
                     )}
                   </div>
 
@@ -402,9 +402,9 @@ export default function Login() {
                         type="checkbox"
                         checked={formData.rememberMe}
                         onChange={handleInputChange}
-                        className="h-4 w-4 text-primary focus:ring-primary border-navy-300 rounded"
+                        className="h-4 w-4 text-primary focus:ring-primary border-white/[0.08]/[0.10] rounded"
                       />
-                      <label htmlFor="remember-me" className="ml-2.5 block text-sm text-navy-700 cursor-pointer select-none">
+                      <label htmlFor="remember-me" className="ml-2.5 block text-sm text-white/70 cursor-pointer select-none">
                         Remember me
                       </label>
                     </div>
@@ -439,16 +439,16 @@ export default function Login() {
                   </button>
                 </form>
 
-                <div className="mt-6 p-4 bg-blue-50/80 border border-blue-100 rounded-xl">
+                <div className="mt-6 p-4 bg-blue-500/10 border-blue-500/20 rounded-xl">
                   <div className="flex items-start">
                     <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 mr-3 flex-shrink-0" />
-                    <p className="text-xs text-navy-600 leading-relaxed">
+                    <p className="text-xs text-white/60 leading-relaxed">
                       {loginContent.securityNote || 'For your security, always sign out before leaving your workstation.'}
                     </p>
                   </div>
                 </div>
 
-                <p className="text-center text-sm text-navy-500 mt-6">
+                <p className="text-center text-sm text-white/40 mt-6">
                   Don't have an account?{' '}
                   <button type="button" onClick={() => { setIsRegister(true); setRegSuccess(false); setRegErrors({}); }} className="text-primary font-semibold hover:text-primary-700 transition-colors">
                     Create one
@@ -459,8 +459,8 @@ export default function Login() {
               <>
                 {regSuccess ? (
                   <div className="text-center py-6 space-y-4">
-                    <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto" />
-                    <h3 className="text-xl font-bold text-navy-900">Registration Complete</h3>
+                    <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
+                    <h3 className="text-xl font-bold text-white/90">Registration Complete</h3>
                     <p className="text-sm text-slate-600">Your account has been created and is pending approval. You can sign in once an administrator approves your account.</p>
                     <button
                       type="button"
@@ -473,23 +473,23 @@ export default function Login() {
                 ) : (
                   <>
                     {regErrors.general && (
-                      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
+                      <div className="mb-6 p-4 bg-red-500/10 border-red-500/20 text-red-400 rounded-xl animate-fade-in">
                         <div className="flex items-center">
-                          <svg className="w-5 h-5 text-red-600 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-red-400 mr-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <p className="text-sm text-red-600 font-medium">{regErrors.general}</p>
+                          <p className="text-sm text-red-400 font-medium">{regErrors.general}</p>
                         </div>
                       </div>
                     )}
 
                     <form onSubmit={handleRegister} className="space-y-5">
                       <div>
-                        <label htmlFor="reg-name" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reg-name" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                           Full Name
                         </label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                             <User className="w-5 h-5" />
                           </div>
                           <input
@@ -499,21 +499,21 @@ export default function Login() {
                             required
                             value={regData.name}
                             onChange={handleRegInputChange}
-                            className={`input-field pl-11 ${regErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            className={`input-field pl-11 ${regErrors.name ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                             placeholder="Enter your full name"
                           />
                         </div>
                         {regErrors.name && (
-                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.name}</p>
+                          <p className="mt-1.5 text-xs text-red-400 font-medium">{regErrors.name}</p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="reg-email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reg-email" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                           Email Address
                         </label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                             <Mail className="w-5 h-5" />
                           </div>
                           <input
@@ -523,21 +523,21 @@ export default function Login() {
                             required
                             value={regData.email}
                             onChange={handleRegInputChange}
-                            className={`input-field pl-11 ${regErrors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            className={`input-field pl-11 ${regErrors.email ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                             placeholder="Enter your email"
                           />
                         </div>
                         {regErrors.email && (
-                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.email}</p>
+                          <p className="mt-1.5 text-xs text-red-400 font-medium">{regErrors.email}</p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="reg-phone" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reg-phone" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                           Phone Number
                         </label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                             <Phone className="w-5 h-5" />
                           </div>
                           <input
@@ -547,21 +547,21 @@ export default function Login() {
                             required
                             value={regData.phone}
                             onChange={handleRegInputChange}
-                            className={`input-field pl-11 ${regErrors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            className={`input-field pl-11 ${regErrors.phone ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                             placeholder="+261 34 000 0000"
                           />
                         </div>
                         {regErrors.phone && (
-                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.phone}</p>
+                          <p className="mt-1.5 text-xs text-red-400 font-medium">{regErrors.phone}</p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="reg-password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reg-password" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                           Password
                         </label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                             <Lock className="w-5 h-5" />
                           </div>
                           <input
@@ -572,21 +572,21 @@ export default function Login() {
                             minLength={6}
                             value={regData.password}
                             onChange={handleRegInputChange}
-                            className={`input-field pl-11 pr-12 ${regErrors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            className={`input-field pl-11 pr-12 ${regErrors.password ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                             placeholder="Create a password (min 6 characters)"
                           />
                         </div>
                         {regErrors.password && (
-                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.password}</p>
+                          <p className="mt-1.5 text-xs text-red-400 font-medium">{regErrors.password}</p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="reg-confirm-password" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                        <label htmlFor="reg-confirm-password" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                           Confirm Password
                         </label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                             <Lock className="w-5 h-5" />
                           </div>
                           <input
@@ -597,12 +597,12 @@ export default function Login() {
                             minLength={6}
                             value={regData.confirmPassword}
                             onChange={handleRegInputChange}
-                            className={`input-field pl-11 pr-12 ${regErrors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : ''}`}
+                            className={`input-field pl-11 pr-12 ${regErrors.confirmPassword ? 'border-red-500/30 focus:border-red-400 focus:ring-red-500/10' : ''}`}
                             placeholder="Confirm your password"
                           />
                         </div>
                         {regErrors.confirmPassword && (
-                          <p className="mt-1.5 text-xs text-red-600 font-medium">{regErrors.confirmPassword}</p>
+                          <p className="mt-1.5 text-xs text-red-400 font-medium">{regErrors.confirmPassword}</p>
                         )}
                       </div>
 
@@ -625,7 +625,7 @@ export default function Login() {
                       </button>
                     </form>
 
-                    <p className="text-center text-sm text-navy-500 mt-6">
+                    <p className="text-center text-sm text-white/40 mt-6">
                       Already have an account?{' '}
                       <button type="button" onClick={() => { setIsRegister(false); setRegErrors({}); }} className="text-primary font-semibold hover:text-primary-700 transition-colors">
                         Sign in
@@ -637,7 +637,7 @@ export default function Login() {
             )}
           </div>
 
-          <div className="mt-6 flex items-center justify-between text-xs text-navy-400">
+          <div className="mt-6 flex items-center justify-between text-xs text-white/25">
             <p className="font-medium">{loginContent.copyright || '© 2026 LA GRANDE MARQUE'}</p>
             <p className="font-medium">Version 1.0.0</p>
           </div>
@@ -646,21 +646,21 @@ export default function Login() {
 
       {showForgotPassword && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-navy-100 rounded-3xl shadow-2xl p-8 w-full max-w-md">
+          <div className="bg-[#12141C] border border-white/[0.08]/[0.06] rounded-3xl shadow-2xl p-8 w-full max-w-md">
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-4">
                 <Mail className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold text-navy-900 mb-2">Reset Password</h3>
-              <p className="text-sm text-navy-500">
+              <h3 className="text-2xl font-bold text-white/90 mb-2">Reset Password</h3>
+              <p className="text-sm text-white/40">
                 Enter your email and we'll send you a reset link.
               </p>
             </div>
 
             {forgotPasswordSent ? (
               <div className="text-center space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <p className="text-sm text-green-700 font-medium">
+                <div className="p-4 bg-emerald-500/10 border-emerald-500/20 text-emerald-400 rounded-xl">
+                  <p className="text-sm text-emerald-400 font-medium">
                     If an account exists, a reset link has been sent.
                   </p>
                 </div>
@@ -680,11 +680,11 @@ export default function Login() {
               <>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="forgot-email" className="block text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">
+                    <label htmlFor="forgot-email" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
                       Email Address
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-navy-400">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/25">
                         <Mail className="w-5 h-5" />
                       </div>
                       <input
@@ -715,7 +715,7 @@ export default function Login() {
                     setShowForgotPassword(false);
                     setForgotPasswordEmail('');
                   }}
-                  className="mt-4 w-full text-center text-sm text-navy-500 hover:text-navy-700 transition-colors"
+                  className="mt-4 w-full text-center text-sm text-white/40 hover:text-white/70 transition-colors"
                 >
                   Back to Login
                 </button>

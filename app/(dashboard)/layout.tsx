@@ -17,23 +17,24 @@ import {
   FileText,
   ChevronDown,
   User,
-  FileSearch,
   AlertTriangle,
   UserPlus,
   Bell,
   Truck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  DollarSign
 } from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { useAppConfig } from '@/lib/swr';
 import { supabase } from '@/lib/supabase/client';
+import { ToastProvider } from '@/lib/toast';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard, Users, Package, Tags, Gift, BarChart3, Settings, UserPlus, FileText, FileSearch,
-  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Truck
+  LayoutDashboard, Users, Package, Tags, Gift, BarChart3, Settings, UserPlus, FileText,
+  LogOut, Ship, Menu, ChevronDown, User, AlertTriangle, Bell, Truck, DollarSign
 };
 
 // Default navigation shown when app_config has no `navigation` entry yet.
@@ -44,10 +45,10 @@ const DEFAULT_NAV: NavItem[] = [
   { path: '/customers', label: 'Customers', icon: 'Users' },
   { path: '/categories', label: 'Categories', icon: 'Tags' },
   { path: '/offers', label: 'Offers', icon: 'Gift' },
+  { path: '/expenses', label: 'Expenses', icon: 'DollarSign' },
   { path: '/reports', label: 'Reports', icon: 'BarChart3' },
   { path: '/notifications', label: 'Notifications', icon: 'Bell' },
 
-  { path: '/audit', label: 'Audit Logs', icon: 'FileSearch' },
   { path: '/settings', label: 'Settings', icon: 'Settings' },
   { path: '/staff', label: 'Staff', icon: 'UserPlus' },
 ];
@@ -75,7 +76,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
     return false;
   });
   const { config, loading } = useAppConfig();
-  const navItems: ResolvedNavItem[] = ((config?.navigation && config.navigation.length ? config.navigation : DEFAULT_NAV) as NavItem[])
+  const baseNav: NavItem[] = (config?.navigation && config.navigation.length ? config.navigation : DEFAULT_NAV) as NavItem[];
+  // Ensure Expenses is always in the nav
+  if (!baseNav.some((item) => item.path === '/expenses')) {
+    baseNav.splice(4, 0, { path: '/expenses', label: 'Expenses', icon: 'DollarSign' });
+  }
+  const navItems: ResolvedNavItem[] = baseNav
     .map((item: NavItem) => ({
       ...item,
       component: ICON_MAP[item.icon] || LayoutDashboard
@@ -197,7 +203,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-row min-h-screen bg-slate-50 text-navy-900 font-sans dark:bg-slate-950 dark:text-slate-100">
+      <div className="flex flex-row min-h-screen bg-[#0B0D12] text-white/90 font-sans">
         <aside className="w-64 bg-navy-800 text-white flex flex-col">
           <div className="h-16 flex items-center px-6 border-b border-white/10">
             <Ship className="w-6 h-6 sm:w-7 sm:h-7 text-gold mr-2 sm:mr-3" />
@@ -212,10 +218,11 @@ export default function DashboardLayout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="flex flex-row min-h-screen bg-slate-50 text-navy-900 font-sans dark:bg-slate-950 dark:text-slate-100">
+    <ToastProvider>
+    <div className="flex flex-row min-h-screen bg-[#0B0D12] text-white/90 font-sans">
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -223,41 +230,97 @@ export default function DashboardLayout({ children }: LayoutProps) {
       <aside
         className={`
           fixed inset-y-0 left-0 z-50
-          w-64 bg-navy-800 text-white
-          transform transition-transform duration-200 ease-in-out
+          w-60 bg-[#0B0D12]/95 backdrop-blur-xl border-r border-white/[0.04] text-white
+          transform transition-all duration-300 ease-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          flex flex-col shadow-xl
+          flex flex-col
           lg:static lg:translate-x-0
-          ${sidebarCollapsed ? 'lg:w-16' : ''}
+          ${sidebarCollapsed ? 'lg:w-[4.5rem]' : ''}
         `}
       >
-        <div className="h-16 flex items-center px-6 border-b border-white/10">
-          <Ship className="w-6 h-6 sm:w-7 sm:h-7 text-gold mr-2 sm:mr-3" />
+        <div className="h-16 flex items-center px-5 border-b border-white/[0.04]">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/20 flex items-center justify-center mr-3 shrink-0">
+            <Ship className="w-4 h-4 text-cyan-400" />
+          </div>
           <div className={sidebarCollapsed ? 'lg:hidden' : ''}>
-            <span className="text-xs sm:text-sm font-bold text-white tracking-tight">{branding.companyName || 'LA GRANDE MARQUE'}</span>
-            <div className="text-[9px] sm:text-[10px] text-blue-300 font-medium tracking-wide">{branding.tagline || 'SHIPPING ADMIN'}</div>
+            <span className="text-sm font-display font-bold text-white tracking-wider">{branding.companyName || 'LA GRANDE'}</span>
+            <div className="text-[9px] text-cyan-400/60 font-medium tracking-[0.15em] uppercase">{branding.tagline || 'SHIPPING'}</div>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 sm:py-4">
-          <ul className="space-y-1 px-2 sm:px-3">
-            {navItems.map((item) => {
+        <nav className="flex-1 overflow-y-auto py-4 premium-scroll">
+          <div className="px-4 mb-2">
+            <span className={`text-[10px] font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              OPERATIONS
+            </span>
+          </div>
+          <ul className="space-y-1.5 px-2 mb-5">
+            {navItems.filter(i => ['Dashboard','Shipments','Customers','Categories','Offers','Expenses'].includes(i.label)).map((item) => {
               const Icon = item.component;
               const isActive = pathname.startsWith(item.path);
               return (
                 <li key={item.path}>
-                  <Link
-                    href={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`
-                      flex items-center px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg transition-all duration-200 text-xs sm:text-sm font-medium
-                      ${isActive ? 'bg-white/10 text-gold' : 'text-blue-100 hover:bg-white/5 hover:text-white'}
-                      ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}
-                    `}
+                  <Link href={item.path} onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-[15px] font-medium
+                      ${isActive ? 'bg-cyan-500/[0.06] text-cyan-400 border-l-[3px] border-cyan-400 pl-[9px]' : 'text-white/40 hover:bg-white/[0.03] hover:text-white/80'}
+                      ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <Icon className="w-4 h-4 mr-2 sm:mr-3" />
+                    <Icon className={`w-5 h-5 mr-3 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-white/25 group-hover:text-white/60'}`} />
                     <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,217,255,0.5)]" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="px-4 mb-2">
+            <span className={`text-[11px] font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              MANAGEMENT
+            </span>
+          </div>
+          <ul className="space-y-1.5 px-2 mb-5">
+            {navItems.filter(i => ['Reports','Notifications'].includes(i.label)).map((item) => {
+              const Icon = item.component;
+              const isActive = pathname.startsWith(item.path);
+              return (
+                <li key={item.path}>
+                  <Link href={item.path} onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-[15px] font-medium
+                      ${isActive ? 'bg-pink-500/[0.06] text-pink-400 border-l-[3px] border-pink-400 pl-[9px]' : 'text-white/40 hover:bg-white/[0.03] hover:text-white/80'}
+                      ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+                    title={sidebarCollapsed ? item.label : undefined}
+                  >
+                    <Icon className={`w-5 h-5 mr-3 transition-colors duration-200 ${isActive ? 'text-pink-400' : 'text-white/25'}`} />
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(255,61,129,0.5)]" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="px-4 mb-2">
+            <span className={`text-[11px] font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              SYSTEM
+            </span>
+          </div>
+          <ul className="space-y-1.5 px-2">
+            {navItems.filter(i => ['Settings','Staff'].includes(i.label)).map((item) => {
+              const Icon = item.component;
+              const isActive = pathname.startsWith(item.path);
+              return (
+                <li key={item.path}>
+                  <Link href={item.path} onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-[15px] font-medium
+                      ${isActive ? 'bg-white/[0.04] text-white border-l-[3px] border-white/30 pl-[9px]' : 'text-white/40 hover:bg-white/[0.03] hover:text-white/80'}
+                      ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+                    title={sidebarCollapsed ? item.label : undefined}
+                  >
+                    <Icon className={`w-5 h-5 mr-3 transition-colors duration-200 ${isActive ? 'text-white/60' : 'text-white/25'}`} />
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40" />}
                   </Link>
                 </li>
               );
@@ -267,95 +330,84 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden lg:flex items-center justify-center p-3 text-blue-300 hover:text-white hover:bg-white/5 transition-colors"
+          className="hidden lg:flex items-center justify-center p-3 text-white/15 hover:text-white/40 hover:bg-white/[0.02] transition-all duration-300"
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {sidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        <div className={`p-3 sm:p-4 border-t border-white/10 ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
+        <div className={`p-3 border-t border-white/[0.04] ${sidebarCollapsed ? 'lg:px-2' : ''}`}>
+          <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? 'lg:justify-center' : ''}`}>
+            <div className="relative shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/10 flex items-center justify-center text-xs font-bold text-white/80">
+                {activeStaffName.split(' ').map((n:string)=>n[0]).join('').slice(0,2)}
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0B0D12]" />
+            </div>
+            <div className={`min-w-0 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              <div className="text-xs font-medium text-white/70 truncate">{activeStaffName}</div>
+              <div className="text-[10px] text-white/25 truncate">Admin</div>
+            </div>
+          </div>
           <button
             onClick={handleLogout}
-            className={`flex items-center w-full px-2 sm:px-3 py-2 text-blue-200 hover:bg-white/5 hover:text-white rounded-lg transition-all duration-200 text-xs sm:text-sm font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+            className={`flex items-center w-full mt-2 px-2 py-1.5 text-white/25 hover:bg-white/[0.03] hover:text-white/60 rounded-lg transition-all duration-200 text-xs font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
           >
-            <LogOut className="w-4 h-4 mr-2 sm:mr-3" />
+            <LogOut className="w-3.5 h-3.5 mr-2" />
             <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Logout</span>
           </button>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 sm:h-16 bg-white/90 dark:bg-slate-900/90 dark:border-slate-700 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 sticky top-0 z-30">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-navy-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white p-1"
-            >
-              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+        <header className="h-16 sm:h-18 lg:h-20 bg-[#0B0D12]/80 backdrop-blur-xl border-b border-white/[0.04] flex items-center justify-between px-5 md:px-8 lg:px-10 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white/30 hover:text-white p-1.5 rounded-lg hover:bg-white/[0.04] transition-all">
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
-            <nav className="hidden sm:flex items-center text-xs sm:text-sm">
+            <div className="hidden sm:flex items-center gap-2.5 text-sm">
               {breadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={idx}>
-                  {idx > 0 && <span className="mx-1 sm:mx-2 text-slate-400">/</span>}
-                  <Link
-                    href={crumb.href}
-                    className={idx === breadcrumbs.length - 1 ? 'text-navy-900 dark:text-slate-100 font-medium' : 'text-slate-500 hover:text-navy-700 dark:hover:text-slate-300'}
-                  >
+                  {idx > 0 && <span className="text-white/10">/</span>}
+                  <Link href={crumb.href}
+                    className={idx === breadcrumbs.length - 1 ? 'text-white/90 font-semibold' : 'text-white/30 hover:text-white/60 transition-colors'}>
                     {crumb.label}
                   </Link>
                 </React.Fragment>
               ))}
-            </nav>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-1.5 sm:p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Toggle theme"
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
-
+          <div className="flex items-center gap-4">
+            <span className="hidden md:block text-xs text-white/25 font-mono tracking-wide">
+              {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
+            </span>
             <div className="relative" ref={profileRef}>
-              <button
-                onClick={() => setShowProfile(!showProfile)}
-                className="flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-xs sm:text-sm overflow-hidden">
+              <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/[0.04] transition-all">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-cyan-400/20 border border-blue-400/10 flex items-center justify-center font-semibold text-sm overflow-hidden">
                   {activeStaffPhoto ? (
                     <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
                   ) : (
-                    activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                    activeStaffName.split(' ').map((n:string)=>n[0]).join('').slice(0,2)
                   )}
                 </div>
-                <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 hidden sm:block" />
+                <ChevronDown className="w-4 h-4 text-white/25 hidden sm:block" />
               </button>
               {showProfile && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm overflow-hidden shrink-0">
-                      {activeStaffPhoto ? (
-                        <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover" />
-                      ) : (
-                        activeStaffName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
-                      )}
+                <div className="absolute right-0 top-full mt-2 w-64 bg-[#12141C] border border-white/[0.06] rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden animate-scaleIn origin-top-right">
+                  <div className="p-4 border-b border-white/[0.04] flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-cyan-400/20 border border-blue-400/10 flex items-center justify-center font-semibold text-sm shrink-0">
+                      {activeStaffPhoto ? <img src={activeStaffPhoto} alt={activeStaffName} className="w-full h-full object-cover rounded-xl" /> : activeStaffName.split(' ').map((n:string)=>n[0]).join('').slice(0,2)}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-navy-900 dark:text-slate-100 truncate">{activeStaffName}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{activeStaffEmail}</div>
+                      <div className="text-sm font-semibold text-white truncate">{activeStaffName}</div>
+                      <div className="text-xs text-white/25 truncate">{activeStaffEmail}</div>
                     </div>
                   </div>
                   <div className="py-2">
-                    <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-                      <User className="w-4 h-4 mr-3 text-slate-400" /> Profile
-                    </Link>
-                    <Link href="/settings" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-                      <Settings className="w-4 h-4 mr-3 text-slate-400" /> Settings
-                    </Link>
-                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <LogOut className="w-4 h-4 mr-3" /> Logout
-                    </button>
+                    <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><User className="w-4 h-4 mr-3 text-white/15" /> Profile</Link>
+                    <Link href="/settings" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-sm text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><Settings className="w-4 h-4 mr-3 text-white/15" /> Settings</Link>
+                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all"><LogOut className="w-4 h-4 mr-3" /> Logout</button>
                   </div>
                 </div>
               )}
@@ -369,24 +421,23 @@ export default function DashboardLayout({ children }: LayoutProps) {
       </main>
 
       {sessionWarning && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#12141C] border border-white/[0.06] rounded-2xl shadow-2xl p-6 max-w-md w-full animate-scaleIn">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                <AlertTriangle className="w-6 h-6 text-amber-400" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-navy-900 dark:text-slate-100">Session Expiring Soon</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">You will be logged out in {sessionWarning.remainingMinutes} minutes due to inactivity.</p>
-              </div>
+              <div><h3 className="text-lg font-semibold text-white">Session Expiring</h3>
+              <p className="text-sm text-white/30">Logout in {sessionWarning.remainingMinutes}min.</p></div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => { setSessionWarning(null); }} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white transition-colors">Dismiss</button>
-              <button onClick={async () => { setSessionWarning(null); await handleLogout(); }} className="btn-primary">Logout Now</button>
+              <button onClick={() => setSessionWarning(null)} className="px-4 py-2 text-sm text-white/30 hover:text-white transition-colors">Dismiss</button>
+              <button onClick={async () => { setSessionWarning(null); await handleLogout(); }} className="btn-primary">Logout</button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </ToastProvider>
   );
 }

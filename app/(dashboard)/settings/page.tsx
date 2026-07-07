@@ -74,7 +74,7 @@ export default function Settings() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading settings...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading settings...</div>;
   }
 
   return (
@@ -85,13 +85,13 @@ export default function Settings() {
         </div>
       )}
       <div className="flex justify-between items-center">
-        <h1 className="text-lg font-semibold text-navy-900">Settings</h1>
+        <h1 className="text-lg font-semibold text-white/90">Settings</h1>
       </div>
 
       <section className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center bg-slate-50">
-          <Building2 className="w-5 h-5 text-slate-500 mr-3" />
-          <h2 className="text-base font-semibold text-navy-900">Company Information</h2>
+        <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
+          <Building2 className="w-5 h-5 text-white/40 mr-3" />
+          <h2 className="text-base font-semibold text-white/90">Company Information</h2>
         </div>
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Company Name">
@@ -116,19 +116,19 @@ export default function Settings() {
       </section>
 
       <section className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center bg-slate-50">
-          <Map className="w-5 h-5 text-slate-500 mr-3" />
-          <h2 className="text-base font-semibold text-navy-900">Routes</h2>
+        <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
+          <Map className="w-5 h-5 text-white/40 mr-3" />
+          <h2 className="text-base font-semibold text-white/90">Routes</h2>
         </div>
         <div className="p-5 space-y-3">
           {draft.routes.map((route: Route) => (
-            <div key={route.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <div key={route.id} className="flex items-center justify-between p-4 bg-[#1A1C24] border border-white/[0.06] rounded-lg">
               <div className="flex items-center space-x-4">
-                <span className="font-medium text-navy-900">{route.from}</span>
+                <span className="font-medium text-white/90">{route.from}</span>
                 <span className="text-amber-500">&#8646;</span>
-                <span className="font-medium text-navy-900">{route.to}</span>
+                <span className="font-medium text-white/90">{route.to}</span>
               </div>
-              <button onClick={() => removeRoute(route.id)} aria-label="Remove route" className="p-1.5 text-slate-500 hover:text-red-500 transition-colors">
+              <button onClick={() => removeRoute(route.id)} aria-label="Remove route" className="p-1.5 text-white/40 hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -136,31 +136,31 @@ export default function Settings() {
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <input type="text" placeholder="From" value={newRoute.from} onChange={(e) => setNewRoute({ ...newRoute, from: e.target.value })} className="input-field" />
             <input type="text" placeholder="To" value={newRoute.to} onChange={(e) => setNewRoute({ ...newRoute, to: e.target.value })} className="input-field" />
-            <button onClick={addRoute} className="flex items-center justify-center px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors whitespace-nowrap">
-              <Plus className="w-4 h-4 mr-2" /> Add Route
+            <button onClick={addRoute} className="btn-primary whitespace-nowrap">
+              <Plus className="w-4 h-4" /> Add Route
             </button>
           </div>
         </div>
       </section>
 
       <section className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center bg-slate-50">
-          <CreditCard className="w-5 h-5 text-slate-500 mr-3" />
-          <h2 className="text-base font-semibold text-navy-900">Payment Methods</h2>
+        <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
+          <CreditCard className="w-5 h-5 text-white/40 mr-3" />
+          <h2 className="text-base font-semibold text-white/90">Payment Methods</h2>
         </div>
         <div className="p-5 space-y-3">
           {draft.paymentMethods.map((method: string) => (
-            <div key={method} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <div key={method} className="flex items-center justify-between p-3 bg-[#1A1C24] border border-white/[0.06] rounded-lg">
               <span className="text-slate-700">{method}</span>
-              <button onClick={() => set('paymentMethods', draft.paymentMethods.filter((m: string) => m !== method))} aria-label={`Remove ${method}`} className="p-1.5 text-slate-500 hover:text-red-500 transition-colors">
+              <button onClick={() => set('paymentMethods', draft.paymentMethods.filter((m: string) => m !== method))} aria-label={`Remove ${method}`} className="p-1.5 text-white/40 hover:text-red-500 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ))}
           <div className="flex gap-3 pt-2">
             <input type="text" placeholder="e.g. Card, PayPal" value={newMethod} onChange={(e) => setNewMethod(e.target.value)} className="input-field" />
-            <button onClick={addMethod} className="flex items-center justify-center px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors whitespace-nowrap">
-              <Plus className="w-4 h-4 mr-2" /> Add
+            <button onClick={addMethod} className="btn-primary whitespace-nowrap">
+              <Plus className="w-4 h-4" /> Add
             </button>
           </div>
           </div>
@@ -179,7 +179,7 @@ export default function Settings() {
 function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
   return (
     <div className={`space-y-2 ${full ? 'md:col-span-2' : ''}`}>
-      <label className="text-xs font-medium uppercase tracking-wider text-slate-600">{label}</label>
+      <label className="text-xs font-medium uppercase tracking-wider text-white/60">{label}</label>
       {children}
     </div>
   );

@@ -7,19 +7,26 @@ import {
   Search,
   FileText,
   FileDown,
+  Share2,
   MessageCircle,
   X,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Download,
+  CheckCircle
 } from 'lucide-react';
 import {
   downloadCSV,
   generateReceiptPDF,
+  generateReceiptBlob,
   whatsappReceiptText } from '@/lib/exports';
 import { supabase } from '@/lib/supabase/client';
+import ReceiptContent from '@/components/ReceiptContent';
+import { useToast } from '@/lib/toast';
 
 export default function Shipments() {
   const { shipments, loading, error, addShipment, updateShipmentStatus } = useShipments();
+  const { toast } = useToast();
   const { customers } = useCustomers();
   const { categories } = useCategories();
   const { settings } = useSettings();
@@ -27,6 +34,8 @@ export default function Shipments() {
   const { config } = useAppConfig();
   const { offers } = useOffers();
   const statuses: ShipmentStatus[] = (config?.shipment_statuses || []) as ShipmentStatus[];
+  // Filter options: always include Pending + Delivered, never Cancelled
+  const filterStatuses = ['Pending', 'Delivered', ...(statuses.filter(s => !['Pending', 'Delivered', 'Cancelled'].includes(s)))] as ShipmentStatus[];
   const defaults = config?.defaults || {};
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,10 +56,12 @@ export default function Shipments() {
     photos: [] as string[]
   });
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [receiptShipment, setReceiptShipment] = useState<Shipment | null>(null);
 
   const activeOffer = offers.find((o) => o.active) ?? offers[0];
   const categoryPricePerKg = categories.find((c) => c.name === newShipment.category)?.pricePerKg ?? null;
   const basePrice = (categoryPricePerKg || settings?.defaultRatePerKg || 0) * (newShipment.weightKg || 0) * (newShipment.quantity || 1);
+
   const offerDiscount = activeOffer
     ? activeOffer.discountPercent > 0
       ? Math.round(basePrice * (activeOffer.discountPercent / 100))
@@ -59,35 +70,49 @@ export default function Shipments() {
         : 0
     : 0;
 
+  const shipmentWeight = (newShipment.weightKg || 0) * (newShipment.quantity || 1);
+  const pricePerKg = (categoryPricePerKg || settings?.defaultRatePerKg || 0);
+
+  // Cumulative loyalty: reward granted when lifetime kg crosses target milestone
   const selectedCustomer = customers.find((c) => c.id === newShipment.customerId);
-  const loyaltyOffers = offers.filter((o) => o.active && o.targetKg > 0 && o.rewardKg > 0);
-  const pricePerKg = basePrice / Math.max(1, (newShipment.weightKg || 0) * (newShipment.quantity || 1));
-  const customerTotalKg = selectedCustomer?.totalKgSent || 0;
-  const loyaltyDiscount = loyaltyOffers.reduce((sum, offer) => {
-    const freeKg = Math.max(0, Math.min(customerTotalKg - offer.targetKg, offer.rewardKg));
-    return sum + (freeKg > 0 ? Math.round(freeKg * pricePerKg) : 0);
-  }, 0);
-  const totalDiscount = offerDiscount + loyaltyDiscount;
+  const customerPrevKg = selectedCustomer?.totalKgSent || 0;
+  const customerNewKg = customerPrevKg + shipmentWeight;
+  const targetKg = activeOffer?.targetKg || 0;
+  const rewardKg = activeOffer?.rewardKg || 0;
+
+  let targetDiscount = 0;
+  let targetDiscountLabel = '';
+  if (activeOffer && targetKg > 0 && rewardKg > 0) {
+    const milestonesBefore = Math.floor(customerPrevKg / targetKg);
+    const milestonesAfter = Math.floor(customerNewKg / targetKg);
+    const earned = Math.max(0, milestonesAfter - milestonesBefore);
+    const milestonesEarned = Math.min(1, earned);
+    if (milestonesEarned > 0) {
+      targetDiscount = Math.round(rewardKg * pricePerKg);
+      targetDiscountLabel = `${rewardKg} kg free`;
+    } else {
+      const nextMilestone = (milestonesBefore + 1) * targetKg;
+      const kgNeeded = nextMilestone - customerNewKg;
+      targetDiscountLabel = `${customerNewKg}/${nextMilestone} kg (${kgNeeded > 0 ? kgNeeded : 0} more to earn ${rewardKg} kg free)`;
+    }
+  }
+  const totalDiscount = offerDiscount + targetDiscount;
   const estimatedTotal = Math.max(0, basePrice - totalDiscount);
   const currency = settings?.currency || defaults.currency || 'MGA';
 
   useEffect(() => {
-    console.log('[Loyalty Debug]', {
+    console.log('[Price Debug]', {
       customerId: newShipment.customerId,
-      customerName: selectedCustomer?.name,
-      customerTotalKg,
-      offersCount: offers.length,
-      activeOffers: offers.filter(o => o.active).map(o => ({ id: o.id, name: o.name, discountPercent: o.discountPercent, discountAmount: o.discountAmount, targetKg: o.targetKg, rewardKg: o.rewardKg })),
-      loyaltyOffersCount: loyaltyOffers.length,
-      loyaltyOffers: loyaltyOffers.map(o => ({ id: o.id, name: o.name, targetKg: o.targetKg, rewardKg: o.rewardKg })),
       basePrice,
       pricePerKg,
       offerDiscount,
-      loyaltyDiscount,
+      targetDiscount,
       totalDiscount,
-      estimatedTotal
+      estimatedTotal,
+      shipmentWeight,
+      activeOffer: activeOffer ? { id: activeOffer.id, name: activeOffer.name, targetKg: activeOffer.targetKg, rewardKg: activeOffer.rewardKg } : null
     });
-  }, [newShipment.customerId, offers, loyaltyOffers, selectedCustomer, basePrice, pricePerKg, offerDiscount, loyaltyDiscount, totalDiscount, estimatedTotal]);
+  }, [newShipment.customerId, newShipment.weightKg, newShipment.quantity, offerDiscount, targetDiscount, totalDiscount, estimatedTotal]);
 
   useEffect(() => {
     if (settings?.paymentMethods?.length) {
@@ -161,6 +186,11 @@ export default function Shipments() {
       receiptSent: false,
       photos: newShipment.photos
     });
+    if (targetDiscount > 0) {
+      toast('success', `🎉 Customer reached ${targetKg}kg milestone! ${rewardKg}kg free applied (-${targetDiscount.toLocaleString()} ${currency})`);
+    } else {
+      toast('success', `Shipment ${trackingNumber} created successfully`);
+    }
     setIsNewModalOpen(false);
     setCustomerSearch('');
     setShowCustomerDropdown(false);
@@ -189,31 +219,64 @@ export default function Shipments() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Packed':
-        return 'bg-blue-100 text-blue-700';
-      case 'In Transit':
-        return 'bg-amber-100 text-amber-700';
-      case 'Delivered':
-        return 'bg-green-100 text-green-700';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
+      case 'Packed':        return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
+      case 'In Transit':    return 'bg-amber-500/15 text-amber-400 border border-amber-500/20';
+      case 'Delivered':     return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20';
+      case 'Cancelled':     return 'bg-red-500/15 text-red-400 border border-red-500/20';
+      case 'Pending':
+      default:              return 'bg-white/[0.04] text-white/60 border border-white/[0.08]';
     }
   };
 
-  const handleWhatsApp = (shipment: Shipment) => {
-    const customer = customers.find((c) => c.id === shipment.customerId);
-    if (!customer || !settings) return;
-    const text = whatsappReceiptText(shipment, settings);
-    const url = `https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  const handlePDF = async (shipment: Shipment) => {
+    const el = document.getElementById('receipt-root');
+    if (el) await generateReceiptPDF(el, shipment.trackingNumber);
   };
 
-  const handlePDF = (shipment: Shipment) => {
+  const handleViewReceipt = (shipment: Shipment) => {
+    setReceiptShipment(shipment);
+  };
+
+  const handleShareReceipt = async () => {
+    try {
+      const el = document.getElementById('receipt-root');
+      if (!el) return;
+      const blob = await generateReceiptBlob(el);
+      const file = new File([blob], `Receipt.pdf`, { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Receipt', files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (err) {
+      console.error('Share failed', err);
+      const el = document.getElementById('receipt-root');
+      if (el) await generateReceiptPDF(el, receiptShipment?.trackingNumber || 'receipt');
+    }
+  };
+
+  const handleWhatsApp = async (shipment: Shipment) => {
     const customer = customers.find((c) => c.id === shipment.customerId);
     if (!customer || !settings) return;
-    generateReceiptPDF(shipment, customer, settings);
+    // Open receipt modal first to render the DOM, then capture
+    setReceiptShipment(shipment);
+    setTimeout(async () => {
+      try {
+        const el = document.getElementById('receipt-root');
+        if (!el) return;
+        const blob = await generateReceiptBlob(el);
+        const file = new File([blob], `Receipt-${shipment.trackingNumber}.pdf`, { type: 'application/pdf' });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: `Receipt ${shipment.trackingNumber}`, files: [file] });
+        }
+      } catch { /* fallback */ }
+      // Also open WhatsApp text
+      const phone = customer.phone.replace(/[^0-9]/g, '');
+      const text = whatsappReceiptText(shipment, settings);
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    }, 300);
   };
 
   const handleExportCSV = () => {
@@ -228,18 +291,18 @@ export default function Shipments() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Loading shipments...</div>;
+    return <div className="flex items-center justify-center h-64 text-white/40">Loading shipments...</div>;
   }
 
   return (
     <div className="space-y-5">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-600 rounded-lg p-4">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4">
           Failed to load shipments: {error}
         </div>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-lg font-semibold text-navy-900">Shipments</h1>
+        <h1 className="text-lg font-semibold text-white/90">Shipments</h1>
         <div className="flex items-center space-x-3">
           <button
             onClick={handleExportCSV}
@@ -257,9 +320,9 @@ export default function Shipments() {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4">
+        <div className="p-4 border-b border-white/[0.06] flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/25" />
             <input
               type="text"
               placeholder="Search by tracking number or customer..."
@@ -270,84 +333,95 @@ export default function Shipments() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'All' | ShipmentStatus)}
-            className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-navy-900 focus:outline-none focus:border-amber-500 transition-colors">
+            className="px-4 py-2.5 bg-[#12141C] border border-white/[0.06] rounded-xl text-white focus:outline-none focus:border-primary transition-colors">
             <option value="All">All Statuses</option>
-            {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+            {filterStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs text-white/40 uppercase bg-white/[0.03] border-b border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium">Tracking</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
                 <th className="px-6 py-4 font-medium">Route</th>
                 <th className="px-6 py-4 font-medium">Details</th>
-                <th className="px-6 py-4 font-medium">Photos</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium text-right">Receipt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-white/[0.04]">
               {filteredShipments.map((shipment) => {
                 const customer = customers.find((c) => c.id === shipment.customerId);
                 const photos = (shipment as any).photos || [];
                 return (
-                  <tr key={shipment.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={shipment.id} className="hover:bg-white/[0.03] transition-all duration-200">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-navy-900">{shipment.trackingNumber}</div>
-                      <div className="text-xs text-slate-500">{shipment.date}</div>
+                      <div className="font-medium text-white/90">{shipment.trackingNumber}</div>
+                      <div className="text-xs text-white/40">{shipment.date}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-navy-900">{customer?.name}</div>
-                      <div className="text-xs text-slate-500">{customer?.phone}</div>
+                      <div className="text-white/80">{customer?.name}</div>
+                      <div className="text-xs text-white/40">{customer?.phone}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 text-white/70">
                         <span>{shipment.origin}</span>
-                        <span className="text-slate-400">&rarr;</span>
+                        <span className="text-white/25">&rarr;</span>
                         <span>{shipment.destination}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div>{shipment.category}</div>
-                      <div className="text-xs text-slate-500">{shipment.weightKg} kg &bull; {shipment.quantity} items</div>
+                      <div className="text-white/70">{shipment.category}</div>
+                      <div className="text-xs text-white/40">{shipment.weightKg} kg &bull; {shipment.quantity} items
+                        {photos.length > 0 && <span className="ml-2">📎{photos.length}</span>}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      {photos.length > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <ImageIcon className="w-4 h-4 text-slate-400" />
-                          <span className="text-xs text-slate-500">{photos.length}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={shipment.status}
-                        onChange={(e) => updateShipmentStatus(shipment.id, e.target.value as ShipmentStatus)}
-                        aria-label="Update status"
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium border-none outline-none cursor-pointer appearance-none ${getStatusColor(shipment.status)}`}>
-                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      <div className="flex flex-col gap-1.5">
+                        <select
+                          value={shipment.status}
+                          onChange={(e) => {
+                            const newStatus = e.target.value as ShipmentStatus;
+                            updateShipmentStatus(shipment.id, newStatus);
+                            toast('success', `${shipment.trackingNumber} → ${newStatus}`);
+                          }}
+                          aria-label="Update status"
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border-none outline-none cursor-pointer appearance-none ${getStatusColor(shipment.status)}`}>
+                          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
+                          <button
+                            onClick={() => {
+                              updateShipmentStatus(shipment.id, 'Delivered');
+                              toast('success', `${shipment.trackingNumber} marked Delivered ✓`);
+                            }}
+                            className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl hover:from-emerald-500 hover:to-emerald-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-emerald-500/30"
+                            title="Mark this shipment as delivered">
+                            Mark Delivered
+                          </button>
+                        )}
+                        {(shipment.status === 'Delivered' || shipment.status === 'Cancelled') && (
+                          <span className="text-xs text-white/25 italic">✓ Finished</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => handlePDF(shipment)}
-                          className="p-2 text-slate-500 hover:text-amber-500 transition-colors"
-                          title="Download PDF receipt"
-                          aria-label="Download PDF receipt">
+                          onClick={() => handleViewReceipt(shipment)}
+                          className="p-2 text-white/25 hover:text-primary hover:scale-110 transition-all duration-200 rounded-lg hover:bg-white/[0.04]"
+                          title="View receipt"
+                          aria-label="View receipt">
                           <FileText className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleWhatsApp(shipment)}
-                          className="p-2 text-slate-500 hover:text-green-500 transition-colors"
-                          title="Send receipt via WhatsApp"
-                          aria-label="Send receipt via WhatsApp">
-                          <MessageCircle className="w-5 h-5" />
+                          className="p-2 text-white/25 hover:text-green-400 hover:scale-110 transition-all duration-200 rounded-lg hover:bg-white/[0.04]"
+                          title="Share via WhatsApp"
+                          aria-label="Share via WhatsApp">
+                          <Share2 className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -356,7 +430,7 @@ export default function Shipments() {
               })}
               {filteredShipments.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">No shipments found.</td>
+                  <td colSpan={7} className="px-6 py-8 text-center text-white/40">No shipments found.</td>
                 </tr>
               )}
             </tbody>
@@ -365,11 +439,11 @@ export default function Shipments() {
       </div>
 
       {isNewModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setIsNewModalOpen(false)}>
-          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-4 border-b border-slate-200 shrink-0">
-              <h2 className="text-lg font-semibold text-navy-900">Create New Shipment</h2>
-              <button onClick={() => { setIsNewModalOpen(false); }} aria-label="Close" className="text-slate-500 hover:text-navy-900 transition-colors">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setIsNewModalOpen(false)}>
+          <div className="bg-[#12141C] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-5 border-b border-white/[0.06] shrink-0">
+              <h2 className="text-lg font-semibold text-white/90">Create New Shipment</h2>
+              <button onClick={() => { setIsNewModalOpen(false); }} aria-label="Close" className="text-white/40 hover:text-white/90 transition-colors p-1.5 rounded-xl hover:bg-white/[0.04]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -390,7 +464,7 @@ export default function Shipments() {
                       className={modalInput}
                     />
                     {showCustomerDropdown && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-[#12141C] border border-white/[0.10] rounded-xl shadow-2xl shadow-black/60 max-h-48 overflow-auto">
                         {customers
                           .filter((c) => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch))
                           .map((c) => (
@@ -401,14 +475,14 @@ export default function Shipments() {
                                 setCustomerSearch(c.name);
                                 setShowCustomerDropdown(false);
                               }}
-                              className={`px-3 py-2.5 cursor-pointer text-sm hover:bg-slate-50 ${newShipment.customerId === c.id ? 'bg-primary/10 text-primary font-medium' : 'text-navy-900'}`}
+                              className={`px-3 py-2.5 cursor-pointer text-sm hover:bg-white/[0.06] transition-colors ${newShipment.customerId === c.id ? 'bg-blue-500/15 text-blue-400 font-semibold' : 'text-white/80'}`}
                             >
                               <div>{c.name}</div>
-                              <div className="text-xs text-slate-500">{c.phone}</div>
+                              <div className="text-xs text-white/40">{c.phone}</div>
                             </div>
                           ))}
                         {customers.filter((c) => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
-                          <div className="px-3 py-2.5 text-sm text-slate-500">No customers found</div>
+                          <div className="px-3 py-2.5 text-sm text-white/40">No customers found</div>
                         )}
                       </div>
                     )}
@@ -448,7 +522,7 @@ export default function Shipments() {
                 <Field label="Goods Photos (up to 3)" full>
                   <div className="space-y-3">
                     <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="flex items-center gap-2 text-sm text-white/60">
                         <Camera className="w-5 h-5" />
                         <span>{uploadingPhotos ? 'Uploading...' : 'Click to upload photos (max 3)'}</span>
                       </div>
@@ -465,11 +539,11 @@ export default function Shipments() {
                       <div className="grid grid-cols-3 gap-3">
                         {newShipment.photos.map((url, idx) => (
                           <div key={idx} className="relative group">
-                            <img src={url} alt={`Shipment ${idx + 1}`} className="w-full h-24 object-cover rounded-lg border border-slate-200" />
+                            <img src={url} alt={`Shipment ${idx + 1}`} className="w-full h-24 object-cover rounded-lg border border-white/[0.06]" />
                             <button
                               type="button"
                               onClick={() => removePhoto(url)}
-                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 p-1 bg-red-500/100 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -477,7 +551,7 @@ export default function Shipments() {
                         ))}
                       </div>
                     )}
-                    <p className="text-xs text-slate-500">{newShipment.photos.length} / 3 photos uploaded</p>
+                    <p className="text-xs text-white/40">{newShipment.photos.length} / 3 photos uploaded</p>
                   </div>
                 </Field>
                 <Field label="Payment Method">
@@ -491,77 +565,68 @@ export default function Shipments() {
                     <option value="Paid">Paid</option>
                   </select>
                 </Field>
-                <div className="md:col-span-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Price Preview</div>
+                <div className="md:col-span-2 bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+                  <div className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">Price Preview</div>
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-white/60">
                       <span>Category rate</span>
                       <span>{(categoryPricePerKg || settings?.defaultRatePerKg || 0).toLocaleString()} {currency} / kg</span>
                     </div>
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-white/60">
                       <span>Weight</span>
                       <span>{newShipment.weightKg || 0} kg &times; {newShipment.quantity || 1} items</span>
                     </div>
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-white/60">
                       <span>Subtotal</span>
                       <span>{basePrice.toLocaleString()} {currency}</span>
                     </div>
 
                     {activeOffer ? (
                       <>
-                        <div className="flex justify-between text-slate-600">
+                        <div className="flex justify-between text-white/60">
                           <span>Active offer</span>
                           <span>{activeOffer.name}</span>
                         </div>
                         {activeOffer.discountPercent > 0 && (
-                          <div className="flex justify-between text-green-700">
+                          <div className="flex justify-between text-emerald-400">
                             <span>Offer discount ({activeOffer.discountPercent}%)</span>
                             <span>- {offerDiscount.toLocaleString()} {currency}</span>
                           </div>
                         )}
                         {activeOffer.discountAmount > 0 && (
-                          <div className="flex justify-between text-green-700">
+                          <div className="flex justify-between text-emerald-400">
                             <span>Offer discount (fixed)</span>
                             <span>- {activeOffer.discountAmount.toLocaleString()} {currency}</span>
                           </div>
                         )}
                         {activeOffer.discountPercent === 0 && activeOffer.discountAmount === 0 && (
-                          <div className="flex justify-between text-slate-500">
+                          <div className="flex justify-between text-white/25">
                             <span>Offer discount</span>
-                            <span>No percentage or fixed discount set on this offer</span>
+                            <span>No percentage or fixed discount</span>
                           </div>
                         )}
                       </>
                     ) : (
-                      <div className="flex justify-between text-slate-500">
+                      <div className="flex justify-between text-white/25">
                         <span>Active offer</span>
                         <span>No active offer</span>
                       </div>
                     )}
 
-                    {selectedCustomer && loyaltyOffers.length > 0 && (
-                      <div className="flex justify-between text-slate-600">
-                        <span>Customer total kg</span>
-                        <span>{customerTotalKg} kg</span>
-                      </div>
-                    )}
-                    {selectedCustomer && loyaltyOffers.length > 0 && loyaltyOffers.map((offer) => {
-                      const freeKg = Math.max(0, Math.min(customerTotalKg - offer.targetKg, offer.rewardKg));
-                      return (
-                        <div key={offer.id} className="flex justify-between text-slate-600">
-                          <span>Loyalty: {offer.name} (target {offer.targetKg}kg, reward {offer.rewardKg}kg)</span>
-                          <span>{freeKg > 0 ? `${freeKg} kg free = ${Math.round(freeKg * pricePerKg).toLocaleString()} ${currency}` : `need ${offer.targetKg - customerTotalKg} kg more`}</span>
+                    {activeOffer && activeOffer.targetKg > 0 && activeOffer.rewardKg > 0 && (
+                      <>
+                        <div className="flex justify-between text-white/60">
+                          <span>Customer lifetime kg</span>
+                          <span>{customerPrevKg} kg shipped</span>
                         </div>
-                      );
-                    })}
-                    {loyaltyDiscount > 0 && (
-                      <div className="flex justify-between text-green-700">
-                        <span>Loyalty discount</span>
-                        <span>- {loyaltyDiscount.toLocaleString()} {currency}</span>
-                      </div>
+                        <div className={`flex justify-between ${targetDiscount > 0 ? 'text-emerald-400 font-semibold' : 'text-white/40'}`}>
+                          <span>Target bonus (ship {targetKg}kg, get {rewardKg}kg free)</span>
+                          <span>{targetDiscount > 0 ? `🎉 Earned! - ${targetDiscount.toLocaleString()} ${currency}` : targetDiscountLabel}</span>
+                        </div>
+                      </>
                     )}
 
-                    <div className="flex justify-between text-navy-900 font-bold pt-2 border-t border-slate-200">
+                    <div className="flex justify-between text-white/90 font-bold pt-2 border-t border-white/[0.06]">
                       <span>Estimated total</span>
                       <span>{estimatedTotal.toLocaleString()} {currency}</span>
                     </div>
@@ -569,24 +634,63 @@ export default function Shipments() {
                 </div>
               </div>
               </div>
-              <div className="pt-4 px-5 pb-5 flex justify-end space-x-3 border-t border-slate-200 shrink-0">
-                <button type="button" onClick={() => { setIsNewModalOpen(false); }} className="px-4 py-2 text-slate-500 hover:text-navy-900 transition-colors">Cancel</button>
+              <div className="pt-4 px-5 pb-5 flex justify-end space-x-3 border-t border-white/[0.06] shrink-0">
+                <button type="button" onClick={() => { setIsNewModalOpen(false); }} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors rounded-xl">Cancel</button>
                 <button type="submit" className="btn-primary" disabled={uploadingPhotos}>Create Shipment</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {receiptShipment && (() => {
+        const rc = receiptShipment;
+        const cus = customers.find((cu) => cu.id === rc.customerId);
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setReceiptShipment(null)}>
+            <div className="bg-[#12141C] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-navy-800 border-b border-white/10 px-5 py-4 flex items-center justify-between shrink-0">
+                <div>
+                  <h2 className="font-bold text-lg text-white">Receipt</h2>
+                  <p className="text-xs text-blue-300">{rc.trackingNumber}</p>
+                </div>
+                <button onClick={() => setReceiptShipment(null)} className="text-white/60 hover:text-white hover:rotate-90 transition-all duration-300 p-1.5 rounded-xl hover:bg-white/10">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto flex-1" id="receipt-root">
+                <ReceiptContent shipment={rc} customer={cus} settings={settings} categories={categories} />
+              </div>
+              <div className="px-5 py-4 border-t border-white/[0.08] flex gap-3 shrink-0">
+                <button onClick={() => handleShareReceipt()} className="btn-secondary flex-1">
+                  <Share2 className="w-4 h-4 mr-2" /> Share PDF
+                </button>
+                {rc.status !== 'Delivered' && rc.status !== 'Cancelled' && (
+                  <button
+                    onClick={() => {
+                      updateShipmentStatus(rc.id, 'Delivered');
+                      toast('success', `${rc.trackingNumber} marked Delivered ✓`);
+                      setReceiptShipment(null);
+                    }}
+                    className="btn-primary flex-1 bg-emerald-600 hover:bg-emerald-700">
+                    <CheckCircle className="w-4 h-4 mr-2" /> Mark Delivered
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-const modalInput = 'w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-navy-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors';
+const modalInput = 'w-full px-3 py-2.5 bg-[#12141C] border border-white/[0.10] rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-blue-500/40 focus:ring-2 focus:ring-blue-500/10 transition-all duration-200';
 
 function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
   return (
     <div className={`space-y-2 ${full ? 'md:col-span-2' : ''}`}>
-      <label className="text-xs font-medium uppercase tracking-wider text-slate-600">{label}</label>
+      <label className="text-xs font-medium uppercase tracking-wider text-white/40">{label}</label>
       {children}
     </div>
   );

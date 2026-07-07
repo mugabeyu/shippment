@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { mapShipment } from '@/lib/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .eq('id', id)
       .single();
     if (error) throw error;
-    return NextResponse.json(data);
+    return NextResponse.json(mapShipment(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -99,7 +100,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(mapShipment(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

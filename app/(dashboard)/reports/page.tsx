@@ -103,12 +103,12 @@ export default function Reports() {
   return (
     <div className="space-y-5">
       {(shipmentsLoading || customersLoading || settingsLoading) && (
-        <div className="flex items-center justify-center h-64 text-slate-500">Loading reports...</div>
+        <div className="flex items-center justify-center h-64 text-white/40">Loading reports...</div>
       )}
       {!(shipmentsLoading || customersLoading || settingsLoading) && (
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-lg font-semibold text-navy-900">Reports &amp; Exports</h1>
+        <h1 className="text-lg font-semibold text-white/90">Reports &amp; Exports</h1>
         <div className="flex items-center space-x-3">
           <button onClick={exportCSV} className="btn-secondary">
             <FileDown className="w-5 h-5 mr-2" /> CSV
@@ -144,7 +144,7 @@ export default function Reports() {
         {summary.map((s) => (
           <div key={s.label} className="card p-5 text-center">
             <div className="text-sm text-slate-600">{s.label}</div>
-            <div className="text-xl font-semibold text-navy-900 mt-1">{s.value}</div>
+            <div className="text-xl font-semibold text-white/90 mt-1">{s.value}</div>
           </div>
         ))}
       </div>
@@ -152,7 +152,7 @@ export default function Reports() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+            <thead className="text-xs text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
               <tr>{headers.map((h) => <th key={h} className="px-6 py-4 font-medium">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -163,7 +163,7 @@ export default function Reports() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={headers.length} className="px-6 py-8 text-center text-slate-500">No data for this report.</td>
+                  <td colSpan={headers.length} className="px-6 py-8 text-center text-white/40">No data for this report.</td>
                 </tr>
               )}
             </tbody>
