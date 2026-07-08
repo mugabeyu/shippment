@@ -179,7 +179,7 @@ export default function Settings() {
 function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
   return (
     <div className={`space-y-2 ${full ? 'md:col-span-2' : ''}`}>
-      <label className="text-xs font-medium uppercase tracking-wider text-white/60">{label}</label>
+      <label className="text-sm font-medium uppercase tracking-wider text-white/60">{label}</label>
       {children}
     </div>
   );

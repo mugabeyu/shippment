@@ -184,13 +184,13 @@ export default function ShipmentDetail() {
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${current ? 'bg-primary text-white ring-4 ring-primary/20' : completed ? 'bg-primary text-white' : 'bg-slate-100 text-white/25 border border-white/[0.06]'}`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className={`text-xs mt-2 font-medium ${current ? 'text-primary' : completed ? 'text-white/90' : 'text-white/25'}`}>{step.label}</span>
+                    <span className={`text-sm mt-2 font-medium ${current ? 'text-primary' : completed ? 'text-white/90' : 'text-white/25'}`}>{step.label}</span>
                   </div>
                 );
               })}
             </div>
             <div className="mt-6">
-              <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-2">Update Status</label>
+              <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-2">Update Status</label>
               <select
                 value={shipment.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
@@ -208,50 +208,50 @@ export default function ShipmentDetail() {
             <h3 className="text-base font-semibold text-white/90 mb-4">Shipment Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Origin</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Origin</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <MapPin className="w-4 h-4 text-white/25" /> {shipment.origin}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Destination</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Destination</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <MapPin className="w-4 h-4 text-white/25" /> {shipment.destination}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Category</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Category</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <Package className="w-4 h-4 text-white/25" /> {shipment.category}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Weight</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Weight</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <DollarSign className="w-4 h-4 text-white/25" /> {shipment.weightKg} kg
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Quantity</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Quantity</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <Package className="w-4 h-4 text-white/25" /> {shipment.quantity} items
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Date</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Date</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-slate-50 border border-white/[0.06] rounded-xl p-3">
                   <Calendar className="w-4 h-4 text-white/25" /> {shipment.date}
                 </div>
               </div>
               {shipment.description && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Description</label>
+                  <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Description</label>
                   <p className="text-sm text-white/80 bg-slate-50 border border-white/[0.06] rounded-xl p-3">{shipment.description}</p>
                 </div>
               )}
               {shipment.specialInstructions && (
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Special Instructions</label>
+                  <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">Special Instructions</label>
                   <p className="text-sm text-white/80 bg-slate-50 border border-white/[0.06] rounded-xl p-3">{shipment.specialInstructions}</p>
                 </div>
               )}
@@ -274,7 +274,7 @@ export default function ShipmentDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white/90">{customer.name}</div>
-                    <div className="text-xs text-white/40">{customer.phone}</div>
+                    <div className="text-sm text-white/40">{customer.phone}</div>
                   </div>
                 </div>
                 {customer.address && (
@@ -315,7 +315,7 @@ export default function ShipmentDetail() {
                 <span className="text-white/60">Total</span>
                 <span className="font-bold text-white/90 text-lg">{cost.toLocaleString()} {settings?.currency || 'MGA'}</span>
               </div>
-              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-200' : 'bg-amber-500/10 text-amber-400 border border-amber-200'}`}>
+              <span className={`inline-flex items-center px-2.5 py-1 text-sm font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-200' : 'bg-amber-500/10 text-amber-400 border border-amber-200'}`}>
                 {shipment.paymentStatus}
               </span>
             </div>

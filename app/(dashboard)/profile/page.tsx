@@ -150,19 +150,19 @@ export default function Profile() {
           <h3 className="text-base font-semibold text-navy-900">Edit Profile</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Full Name</label>
+              <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Full Name</label>
               <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-field" />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Email</label>
+              <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Email</label>
               <input type="email" value={formData.email} readOnly disabled className="input-field bg-slate-100 text-slate-500 cursor-not-allowed" />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Phone</label>
+              <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Phone</label>
               <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="input-field" />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Department</label>
+              <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Department</label>
               <input type="text" value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} className="input-field" />
             </div>
           </div>
@@ -177,11 +177,11 @@ export default function Profile() {
         <h3 className="text-base font-semibold text-navy-900 mb-4">Change Password</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">Current Password</label>
+            <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Current Password</label>
             <input type="password" className="input-field" placeholder="Enter current password" />
           </div>
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1">New Password</label>
+            <label className="block text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">New Password</label>
             <input type="password" className="input-field" placeholder="Enter new password" />
           </div>
           <div className="sm:col-span-2">

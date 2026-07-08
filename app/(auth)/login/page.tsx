@@ -334,7 +334,7 @@ export default function Login() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
-                    <label htmlFor="email" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                    <label htmlFor="email" className="block text-sm font-semibold text-white/60 uppercase tracking-wider mb-2">
                       Email Address
                     </label>
                     <div className="relative">
@@ -359,7 +359,7 @@ export default function Login() {
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                    <label htmlFor="password" className="block text-sm font-semibold text-white/60 uppercase tracking-wider mb-2">
                       Password
                     </label>
                     <div className="relative">

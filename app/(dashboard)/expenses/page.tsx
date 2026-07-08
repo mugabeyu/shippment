@@ -89,7 +89,7 @@ export default function Expenses() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Expenses</h1>
+          <h1 className="text-xl font-semibold text-white/90">Expenses</h1>
           <p className="text-sm text-white/40">Track all business costs</p>
         </div>
         <button onClick={openNew} className="btn-primary">
@@ -101,15 +101,15 @@ export default function Expenses() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5 cinematic-hover">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider text-white/40">Total Expenses</span>
+            <span className="text-sm font-medium uppercase tracking-wider text-white/40">Total Expenses</span>
             <DollarSign className="w-4 h-4 text-red-500" />
           </div>
           <div className="text-2xl font-bold text-red-400">{totalExpenses.toLocaleString()} {currency}</div>
-          <div className="text-xs text-white/25 mt-1">{expenses.length} entries</div>
+          <div className="text-sm text-white/25 mt-1">{expenses.length} entries</div>
         </div>
         <div className="card p-5 cinematic-hover">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider text-white/40">This Month</span>
+            <span className="text-sm font-medium uppercase tracking-wider text-white/40">This Month</span>
             <DollarSign className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-amber-600">
@@ -118,17 +118,17 @@ export default function Expenses() {
               return e.date && new Date(e.date).getMonth() === now.getMonth() && new Date(e.date).getFullYear() === now.getFullYear();
             }).reduce((sum, e) => sum + e.amount, 0).toLocaleString()} {currency}
           </div>
-          <div className="text-xs text-white/25 mt-1">Current month</div>
+          <div className="text-sm text-white/25 mt-1">Current month</div>
         </div>
         <div className="card p-5 cinematic-hover">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider text-white/40">Categories</span>
+            <span className="text-sm font-medium uppercase tracking-wider text-white/40">Categories</span>
             <Paperclip className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-primary">
             {new Set(expenses.map((e) => e.category)).size}
           </div>
-          <div className="text-xs text-white/25 mt-1">Unique categories</div>
+          <div className="text-sm text-white/25 mt-1">Unique categories</div>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export default function Expenses() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
+            <thead className="text-sm text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium">Date</th>
                 <th className="px-6 py-4 font-medium">Category</th>
@@ -159,9 +159,9 @@ export default function Expenses() {
             <tbody className="divide-y divide-slate-200">
               {filtered.map((expense) => (
                 <tr key={expense.id} className="hover:bg-slate-50 transition-all duration-200">
-                  <td className="px-6 py-4 font-mono text-xs text-white/40">{expense.date}</td>
+                  <td className="px-6 py-4 font-mono text-sm text-white/40">{expense.date}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2.5 py-1 bg-slate-100 border border-white/[0.06] rounded-lg text-xs font-medium text-slate-700">{expense.category}</span>
+                    <span className="px-2.5 py-1 bg-slate-100 border border-white/[0.06] rounded-lg text-sm font-medium text-slate-700">{expense.category}</span>
                   </td>
                   <td className="px-6 py-4 font-semibold text-red-400">
                     - {expense.amount.toLocaleString()} {currency}
@@ -199,11 +199,11 @@ export default function Expenses() {
             <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1.5">Date</label>
+                  <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">Date</label>
                   <input required type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} className="input-field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1.5">Category</label>
+                  <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">Category</label>
                   <select required value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className="input-field">
                     <option value="">Select...</option>
                     {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -211,15 +211,15 @@ export default function Expenses() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1.5">Amount ({currency})</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">Amount ({currency})</label>
                 <input required type="number" min="1" value={draft.amount || ''} onChange={(e) => setDraft({ ...draft, amount: Math.max(1, parseInt(e.target.value) || 0) })} className="input-field" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1.5">Note</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">Note</label>
                 <textarea rows={3} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} placeholder="Add a description..." className="input-field resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1.5">Attachment URL</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">Attachment URL</label>
                 <input type="text" value={draft.attachmentUrl} onChange={(e) => setDraft({ ...draft, attachmentUrl: e.target.value })} placeholder="https://..." className="input-field" />
               </div>
               <div className="pt-4 flex justify-end space-x-3 border-t border-white/[0.06]">

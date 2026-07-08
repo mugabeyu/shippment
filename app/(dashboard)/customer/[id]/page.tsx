@@ -92,15 +92,15 @@ export default function CustomerDetail() {
             )}
             <div className="flex flex-wrap gap-4 mt-4">
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2.5 text-center">
-                <div className="text-xs font-medium text-white/40 uppercase tracking-wider">Total KG</div>
+                <div className="text-sm font-medium text-white/40 uppercase tracking-wider">Total KG</div>
                 <div className="text-base font-bold text-white/90">{customer.totalKgSent} kg</div>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2.5 text-center">
-                <div className="text-xs font-medium text-white/40 uppercase tracking-wider">Shipments</div>
+                <div className="text-sm font-medium text-white/40 uppercase tracking-wider">Shipments</div>
                 <div className="text-base font-bold text-white/90">{customerShipments.length}</div>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2.5 text-center">
-                <div className="text-xs font-medium text-white/40 uppercase tracking-wider">Spent</div>
+                <div className="text-sm font-medium text-white/40 uppercase tracking-wider">Spent</div>
                 <div className="text-base font-bold text-amber-500">{totalSpent.toLocaleString()} {settings?.currency || config?.defaults?.currency || 'MGA'}</div>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function CustomerDetail() {
                       <span className="font-mono text-sm font-semibold text-amber-500 bg-amber-500/10 px-2 py-1 rounded">
                         {shipment.trackingNumber}
                       </span>
-                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                      <span className={`px-2.5 py-1 text-sm font-medium rounded-full ${
                         shipment.status === 'Delivered' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                         shipment.status === 'In Transit' ? 'bg-amber-100 text-amber-700' :
                         shipment.status === 'Cancelled' ? 'bg-red-100 text-red-400' :

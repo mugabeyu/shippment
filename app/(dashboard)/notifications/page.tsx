@@ -96,7 +96,7 @@ export default function Activity() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
                     <h3 className="text-sm font-semibold text-white/90">{formatAction(action(log))}</h3>
-                    <span className="flex items-center text-xs text-slate-400 shrink-0">
+                    <span className="flex items-center text-sm text-slate-400 shrink-0">
                       <Clock className="w-3.5 h-3.5 mr-1" />
                       {createdAt(log) ? new Date(createdAt(log)).toLocaleString() : '—'}
                     </span>
@@ -104,7 +104,7 @@ export default function Activity() {
                   {summarizeDetails(details(log)) && (
                     <p className="text-sm text-slate-600 leading-relaxed">{summarizeDetails(details(log))}</p>
                   )}
-                  <div className="flex items-center mt-1.5 text-xs text-white/40">
+                  <div className="flex items-center mt-1.5 text-sm text-white/40">
                     <User className="w-3.5 h-3.5 mr-1.5" />
                     <span className="font-medium text-slate-700">{staffName(log) || 'System'}</span>
                     {staffEmail(log) && <span className="ml-1">({staffEmail(log)})</span>}

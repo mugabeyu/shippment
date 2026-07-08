@@ -302,7 +302,7 @@ export default function Shipments() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-lg font-semibold text-white/90">Shipments</h1>
+        <h1 className="text-xl font-semibold text-white/90">Shipments</h1>
         <div className="flex items-center space-x-3">
           <button
             onClick={handleExportCSV}
@@ -341,7 +341,7 @@ export default function Shipments() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs text-white/40 uppercase bg-white/[0.03] border-b border-white/[0.06]">
+            <thead className="text-sm text-white/40 uppercase bg-white/[0.03] border-b border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium">Tracking</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
@@ -359,11 +359,11 @@ export default function Shipments() {
                   <tr key={shipment.id} className="hover:bg-white/[0.03] transition-all duration-200">
                     <td className="px-6 py-4">
                       <div className="font-medium text-white/90">{shipment.trackingNumber}</div>
-                      <div className="text-xs text-white/40">{shipment.date}</div>
+                       <div className="text-sm text-white/40">{shipment.date}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-white/80">{customer?.name}</div>
-                      <div className="text-xs text-white/40">{customer?.phone}</div>
+                       <div className="text-sm text-white/40">{customer?.phone}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2 text-white/70">
@@ -374,7 +374,7 @@ export default function Shipments() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-white/70">{shipment.category}</div>
-                      <div className="text-xs text-white/40">{shipment.weightKg} kg &bull; {shipment.quantity} items
+                       <div className="text-sm text-white/40">{shipment.weightKg} kg &bull; {shipment.quantity} items
                         {photos.length > 0 && <span className="ml-2">📎{photos.length}</span>}
                       </div>
                     </td>
@@ -388,7 +388,7 @@ export default function Shipments() {
                             toast('success', `${shipment.trackingNumber} → ${newStatus}`);
                           }}
                           aria-label="Update status"
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium border-none outline-none cursor-pointer appearance-none ${getStatusColor(shipment.status)}`}>
+                           className={`px-2.5 py-1 rounded-full text-sm font-medium border-none outline-none cursor-pointer appearance-none ${getStatusColor(shipment.status)}`}>
                           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
@@ -403,7 +403,7 @@ export default function Shipments() {
                           </button>
                         )}
                         {(shipment.status === 'Delivered' || shipment.status === 'Cancelled') && (
-                          <span className="text-xs text-white/25 italic">✓ Finished</span>
+                          <span className="text-sm text-white/25 italic">✓ Finished</span>
                         )}
                       </div>
                     </td>
@@ -478,7 +478,7 @@ export default function Shipments() {
                               className={`px-3 py-2.5 cursor-pointer text-sm hover:bg-white/[0.06] transition-colors ${newShipment.customerId === c.id ? 'bg-blue-500/15 text-blue-400 font-semibold' : 'text-white/80'}`}
                             >
                               <div>{c.name}</div>
-                              <div className="text-xs text-white/40">{c.phone}</div>
+                               <div className="text-sm text-white/40">{c.phone}</div>
                             </div>
                           ))}
                         {customers.filter((c) => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
@@ -551,7 +551,7 @@ export default function Shipments() {
                         ))}
                       </div>
                     )}
-                    <p className="text-xs text-white/40">{newShipment.photos.length} / 3 photos uploaded</p>
+                    <p className="text-sm text-white/40">{newShipment.photos.length} / 3 photos uploaded</p>
                   </div>
                 </Field>
                 <Field label="Payment Method">
@@ -566,7 +566,7 @@ export default function Shipments() {
                   </select>
                 </Field>
                 <div className="md:col-span-2 bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
-                  <div className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">Price Preview</div>
+                  <div className="text-sm font-medium text-white/40 mb-2 uppercase tracking-wider">Price Preview</div>
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between text-white/60">
                       <span>Category rate</span>
@@ -652,7 +652,7 @@ export default function Shipments() {
               <div className="bg-navy-800 border-b border-white/10 px-5 py-4 flex items-center justify-between shrink-0">
                 <div>
                   <h2 className="font-bold text-lg text-white">Receipt</h2>
-                  <p className="text-xs text-blue-300">{rc.trackingNumber}</p>
+                  <p className="text-sm text-blue-300">{rc.trackingNumber}</p>
                 </div>
                 <button onClick={() => setReceiptShipment(null)} className="text-white/60 hover:text-white hover:rotate-90 transition-all duration-300 p-1.5 rounded-xl hover:bg-white/10">
                   <X className="w-5 h-5" />
@@ -690,7 +690,7 @@ const modalInput = 'w-full px-3 py-2.5 bg-[#12141C] border border-white/[0.10] r
 function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
   return (
     <div className={`space-y-2 ${full ? 'md:col-span-2' : ''}`}>
-      <label className="text-xs font-medium uppercase tracking-wider text-white/40">{label}</label>
+      <label className="text-sm font-medium uppercase tracking-wider text-white/40">{label}</label>
       {children}
     </div>
   );

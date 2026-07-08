@@ -28,30 +28,30 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
         </div>
         <div>
           <div className="font-bold text-white/90 text-lg">{company}</div>
-          {settings?.phone && <div className="text-xs text-white/40">{settings.phone}</div>}
-          {settings?.contactEmail && <div className="text-xs text-white/40">{settings.contactEmail}</div>}
-          {settings?.address && <div className="text-xs text-white/25">{settings.address}</div>}
+          {settings?.phone && <div className="text-sm text-white/40">{settings.phone}</div>}
+          {settings?.contactEmail && <div className="text-sm text-white/40">{settings.contactEmail}</div>}
+          {settings?.address && <div className="text-sm text-white/25">{settings.address}</div>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <span className="text-[11px] text-white/25 uppercase font-medium tracking-wider">Receipt No</span>
+          <span className="text-xs text-white/25 uppercase font-medium tracking-wider">Receipt No</span>
           <div className="font-semibold text-white/90 mt-0.5">{shipment.trackingNumber}</div>
         </div>
         <div className="text-right">
-          <span className="text-[11px] text-white/25 uppercase font-medium tracking-wider">Date</span>
+          <span className="text-xs text-white/25 uppercase font-medium tracking-wider">Date</span>
           <div className="font-semibold text-white/90 mt-0.5">{shipment.date}</div>
         </div>
         <div>
-          <span className="text-[11px] text-white/25 uppercase font-medium tracking-wider">Customer</span>
+          <span className="text-xs text-white/25 uppercase font-medium tracking-wider">Customer</span>
           <div className="font-semibold text-white/90 mt-0.5">{customer?.name || 'Unknown'}</div>
-          {customer?.phone && <div className="text-xs text-white/40">{customer.phone}</div>}
+          {customer?.phone && <div className="text-sm text-white/40">{customer.phone}</div>}
         </div>
         <div className="text-right">
-          <span className="text-[11px] text-white/25 uppercase font-medium tracking-wider">Status</span>
+          <span className="text-xs text-white/25 uppercase font-medium tracking-wider">Status</span>
           <div className="mt-0.5">
-            <span className={`inline-flex px-2.5 py-0.5 text-xs font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25' : 'bg-amber-500/15 text-amber-400 border border-amber-500/25'}`}>
+            <span className={`inline-flex px-2.5 py-0.5 text-sm font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25' : 'bg-amber-500/15 text-amber-400 border border-amber-500/25'}`}>
               {shipment.paymentStatus}
             </span>
           </div>
@@ -106,7 +106,7 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
         </div>
       </div>
 
-      <div className="text-center text-[11px] text-white/25 pt-2">
+      <div className="text-center text-xs text-white/25 pt-2">
         Thank you for choosing {company} — Keep this receipt for reference
       </div>
     </div>

@@ -132,7 +132,7 @@ export default function Staff() {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-white/90">{s.name || 'Pending Invite'}</h3>
-                  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+                  <span className={`inline-block px-2 py-0.5 text-sm font-medium rounded-full ${
                     s.role === 'Admin' ? 'bg-amber-100 text-amber-700' : 'bg-[#12141C]/[0.04] text-slate-600'
                   }`}>
                     {s.role}
@@ -153,7 +153,7 @@ export default function Staff() {
                 )}
                 <div className="flex items-center">
                   <span className="text-white/40 mr-2">Status:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${
                     s.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>
                     {s.active ? 'Active' : 'Blocked'}
@@ -164,11 +164,11 @@ export default function Staff() {
               {!s.active && (
                 <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Assign Role</span>
+                    <span className="text-sm font-medium text-white/40 uppercase tracking-wider">Assign Role</span>
                     <select
                       value={approvingId === s.id ? approvingRole : (s.role === 'Admin' ? 'Admin' : 'Staff')}
                       onChange={(e) => { setApprovingId(s.id); setApprovingRole(e.target.value as 'Admin' | 'Staff'); }}
-                      className="text-xs border border-white/[0.06] rounded-lg px-2 py-1.5 text-white/90 bg-[#12141C] focus:outline-none focus:border-amber-500"
+                      className="text-sm border border-white/[0.06] rounded-lg px-2 py-1.5 text-white/90 bg-[#12141C] focus:outline-none focus:border-amber-500"
                     >
                       <option value="Staff">Staff</option>
                       <option value="Admin">Admin</option>
@@ -230,7 +230,7 @@ export default function Staff() {
               {!inviteLink ? (
                 <>
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
+                    <label className="block text-sm font-medium uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
                     <input
                       required
                       type="email"
@@ -241,7 +241,7 @@ export default function Staff() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Role</label>
+                    <label className="block text-sm font-medium uppercase tracking-wider text-slate-600 mb-1">Role</label>
                     <select
                       value={inviteDraft.role}
                       onChange={(e) => setInviteDraft({ ...inviteDraft, role: e.target.value as 'Admin' | 'Staff' })}
@@ -251,7 +251,7 @@ export default function Staff() {
                       <option value="Admin">Admin</option>
                     </select>
                   </div>
-                  <p className="text-xs text-white/40">An email will be sent to the staff member with a link to set their password and complete registration. If the email doesn't arrive, you can share the registration link manually.</p>
+                  <p className="text-sm text-white/40">An email will be sent to the staff member with a link to set their password and complete registration. If the email doesn't arrive, you can share the registration link manually.</p>
                   <div className="pt-4 flex justify-end space-x-3">
                     <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">Cancel</button>
                     <button type="button" onClick={handleInvite} disabled={sending} className="btn-primary disabled:opacity-50">
@@ -263,23 +263,23 @@ export default function Staff() {
                 <div className="space-y-4">
                   <p className="text-sm text-green-700 font-medium">Invitation created successfully!</p>
                   <div>
-                    <label className="block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1">Registration Link</label>
+                    <label className="block text-sm font-medium uppercase tracking-wider text-slate-600 mb-1">Registration Link</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         readOnly
                         value={inviteLink}
-                        className="input-field text-xs"
+                        className="input-field text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => navigator.clipboard.writeText(inviteLink)}
-                        className="px-3 py-2 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors whitespace-nowrap"
+                        className="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors whitespace-nowrap"
                       >
                         Copy
                       </button>
                     </div>
-                     <p className="text-xs text-white/40 mt-2">We emailed the staff member a link to set their password. If it didn't arrive, share this link manually — they will use it to set their password and log in.</p>
+                     <p className="text-sm text-white/40 mt-2">We emailed the staff member a link to set their password. If it didn't arrive, share this link manually — they will use it to set their password and log in.</p>
                   </div>
                   <div className="pt-4 flex justify-end">
                     <button type="button" onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }} className="px-4 py-2 text-sm text-white/40 hover:text-white/90 transition-colors">Close</button>

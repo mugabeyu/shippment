@@ -97,7 +97,7 @@ export default function Customers() {
                     <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-semibold text-white/90 truncate">{customer.name}</h3>
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                      <span className={`px-2 py-0.5 text-sm font-medium rounded-full ${
                         customer.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                       }`}>
                         {customer.active ? 'Active' : 'Blocked'}
@@ -142,7 +142,7 @@ export default function Customers() {
               </div>
 
               {customer.notes &&
-                <div className="mt-4 pt-4 border-t border-white/[0.06] text-xs text-white/40">
+                <div className="mt-4 pt-4 border-t border-white/[0.06] text-sm text-white/40">
                   <span className="font-medium text-white/60">Notes:</span>{' '}
                   {customer.notes}
                 </div>
@@ -173,7 +173,7 @@ export default function Customers() {
             </div>
             <form onSubmit={handleAddCustomer} className="p-5 space-y-5">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Full Name</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Full Name</label>
                 <input
                   required
                   type="text"
@@ -187,7 +187,7 @@ export default function Customers() {
                   className="input-field" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Phone Number (Loyalty ID)</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Phone Number (Loyalty ID)</label>
                 <input
                   required
                   type="tel"
@@ -202,7 +202,7 @@ export default function Customers() {
                   className="input-field" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Email Address</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Email Address</label>
                 <input
                   type="email"
                   value={draft.email}
@@ -214,7 +214,7 @@ export default function Customers() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Address</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Address</label>
                 <textarea
                   rows={2}
                   value={draft.address}
@@ -224,7 +224,7 @@ export default function Customers() {
                   className="input-field resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Notes</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Notes</label>
                 <textarea
                   rows={2}
                   value={draft.notes}

@@ -121,10 +121,10 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between animate-fadeIn">
         <div>
-          <h1 className="text-2xl font-display text-white tracking-tight">DASHBOARD</h1>
-          <p className="text-xs text-white/30 mt-0.5 uppercase tracking-[0.2em]">Live Operations Overview</p>
+          <h1 className="text-3xl md:text-4xl font-display text-white tracking-tight">DASHBOARD</h1>
+          <p className="text-sm text-white/30 mt-0.5 uppercase tracking-[0.2em]">Live Operations Overview</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-white/30">
+        <div className="flex items-center gap-2 text-sm text-white/30">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
           <span>System Online</span>
         </div>
@@ -179,8 +179,8 @@ export default function Dashboard() {
         <div className="lg:col-span-2 card-glow p-6 animate-fadeIn">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-display text-lg text-white tracking-tight">Monthly Volume</h2>
-              <p className="text-xs text-white/25">Shipment KG over the last 7 months</p>
+              <h2 className="font-display text-xl text-white tracking-tight">Monthly Volume</h2>
+              <p className="text-sm text-white/25">Shipment KG over the last 7 months</p>
             </div>
             <Zap className="w-4 h-4 text-cyan-400" />
           </div>
@@ -212,8 +212,8 @@ export default function Dashboard() {
         </div>
 
         <div className="card-glow p-6 animate-fadeIn">
-          <h2 className="font-display text-lg text-white tracking-tight mb-1">Recent Activity</h2>
-          <p className="text-xs text-white/25 mb-5">Latest 5 shipments</p>
+          <h2 className="font-display text-xl text-white tracking-tight mb-1">Recent Activity</h2>
+          <p className="text-sm text-white/25 mb-5">Latest 5 shipments</p>
           <div className="space-y-2">
             {shipments.slice(0, 5).map((shipment, i) => {
               const customer = customers.find((c) => c.id === shipment.customerId);
@@ -225,13 +225,13 @@ export default function Dashboard() {
                 >
                   <div>
                     <div className="font-medium text-white/90 text-sm font-display tracking-wide">{shipment.trackingNumber}</div>
-                    <div className="text-[11px] text-white/30">{customer?.name}</div>
+                    <div className="text-xs text-white/30">{customer?.name}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`badge ${shipment.status === 'Delivered' ? 'badge-success' : shipment.status === 'Pending' ? 'badge-warning' : 'badge-info'}`}>
                       {shipment.status}
                     </span>
-                    <span className="text-xs text-white/20 font-display">{shipment.weightKg}kg</span>
+                    <span className="text-sm text-white/20 font-display">{shipment.weightKg}kg</span>
                   </div>
                 </div>
               );
@@ -247,8 +247,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-5">
             <Trophy className="w-5 h-5 text-amber-400" />
             <div>
-              <h2 className="font-display text-lg text-white tracking-tight">Top Shippers</h2>
-              <p className="text-xs text-white/25">By total volume</p>
+              <h2 className="font-display text-xl text-white tracking-tight">Top Shippers</h2>
+              <p className="text-sm text-white/25">By total volume</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -269,7 +269,7 @@ export default function Dashboard() {
                   </span>
                   <div>
                     <div className="text-white/90 font-medium text-sm">{c.name}</div>
-                    <div className="text-[11px] text-white/25">{c.phone}</div>
+                    <div className="text-xs text-white/25">{c.phone}</div>
                   </div>
                 </div>
                 <span className="font-display text-amber-400 font-semibold">{c.totalKgSent.toLocaleString()} kg</span>
@@ -279,8 +279,8 @@ export default function Dashboard() {
         </div>
 
         <div className="card-glow p-6">
-          <h2 className="font-display text-lg text-white tracking-tight mb-1">Loyalty Progress</h2>
-          <p className="text-xs text-white/25 mb-5">Next {target}kg bonus: {activeOffer?.rewardKg ?? 2}kg free</p>
+          <h2 className="font-display text-xl text-white tracking-tight mb-1">Loyalty Progress</h2>
+          <p className="text-sm text-white/25 mb-5">Next {target}kg bonus: {activeOffer?.rewardKg ?? 2}kg free</p>
           <div className="space-y-4">
             {closeToBonus.map((c, i) => {
               const progress = c.totalKgSent % target;
@@ -331,7 +331,7 @@ function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, t
   return (
     <div className={`card-glow p-5 animate-fadeIn ${delay || ''} group ${glowMap[accent] || ''}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[11px] font-semibold text-white/25 uppercase tracking-[0.15em]">{title}</h3>
+        <h3 className="text-sm font-semibold text-white/25 uppercase tracking-[0.15em]">{title}</h3>
         <div className={`p-2 rounded-xl ${iconBgMap[accent] || 'bg-white/5 border-white/10'} border transition-all duration-300 group-hover:scale-110`}>
           {pulseDot ? (
             <div className="relative">
@@ -343,12 +343,12 @@ function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, t
           )}
         </div>
       </div>
-      <div className="font-display text-3xl font-bold text-white tracking-tight mb-1">
+      <div className="font-display text-4xl font-bold text-white tracking-tight mb-1">
         {prefix}<>{value}</>{suffix}
       </div>
-      <div className={`flex items-center text-xs ${trendUp ? 'text-emerald-400' : trend.includes('Loss') || trend.includes('entries') ? 'text-pink-400' : 'text-white/25'}`}>
-        {trendUp && <ArrowUpRight className="w-3 h-3 mr-1" />}
-        {!trendUp && trend.includes('Loss') && <ArrowDownRight className="w-3 h-3 mr-1" />}
+      <div className={`flex items-center text-sm ${trendUp ? 'text-emerald-400' : trend.includes('Loss') || trend.includes('entries') ? 'text-pink-400' : 'text-white/25'}`}>
+        {trendUp && <ArrowUpRight className="w-4 h-4 mr-1" />}
+        {!trendUp && trend.includes('Loss') && <ArrowDownRight className="w-4 h-4 mr-1" />}
         {trend}
       </div>
       {/* Sparkline bar */}

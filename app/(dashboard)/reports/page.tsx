@@ -108,7 +108,7 @@ export default function Reports() {
       {!(shipmentsLoading || customersLoading || settingsLoading) && (
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-lg font-semibold text-white/90">Reports &amp; Exports</h1>
+        <h1 className="text-xl font-semibold text-white/90">Reports &amp; Exports</h1>
         <div className="flex items-center space-x-3">
           <button onClick={exportCSV} className="btn-secondary">
             <FileDown className="w-5 h-5 mr-2" /> CSV
@@ -152,7 +152,7 @@ export default function Reports() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="text-xs text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
+            <thead className="text-sm text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
               <tr>{headers.map((h) => <th key={h} className="px-6 py-4 font-medium">{h}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">

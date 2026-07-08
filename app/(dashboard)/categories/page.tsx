@@ -72,11 +72,11 @@ export default function Categories() {
               </div>
               <p className="text-white/60 text-sm mb-4 flex-1">{category.description}</p>
               <div className="bg-[#1A1C24] rounded-lg p-3 border border-white/[0.06]">
-                <div className="text-xs font-medium text-white/40 mb-1 uppercase tracking-wider">Handling Notes</div>
+                <div className="text-sm font-medium text-white/40 mb-1 uppercase tracking-wider">Handling Notes</div>
                 <div className="text-sm text-white/70">{category.handlingNotes}</div>
               </div>
               <div className="bg-[#1A1C24] rounded-lg p-3 border border-white/[0.06]">
-                <div className="text-xs font-medium text-white/40 mb-1 uppercase tracking-wider">Price per kg</div>
+                <div className="text-sm font-medium text-white/40 mb-1 uppercase tracking-wider">Price per kg</div>
                 <div className="text-sm text-white/70">{(category.pricePerKg ?? 0).toLocaleString()} MGA</div>
               </div>
             </div>
@@ -95,19 +95,19 @@ export default function Categories() {
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-5">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Category Name</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Category Name</label>
                 <input required type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="input-field" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Description</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Description</label>
                 <textarea rows={2} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} className="input-field resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Price per kg</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Price per kg</label>
                 <input required type="number" min="0" step="1" value={draft.pricePerKg ?? 0} onChange={(e) => setDraft({ ...draft, pricePerKg: Number(e.target.value) })} className="input-field" />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wider text-white/60 mb-1">Handling Notes / Special Requirements</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Handling Notes / Special Requirements</label>
                 <textarea rows={2} value={draft.handlingNotes} onChange={(e) => setDraft({ ...draft, handlingNotes: e.target.value })} className="input-field resize-none" placeholder="e.g. Fragile, perishable, keep dry" />
               </div>
               <div className="pt-4 flex justify-end space-x-3">

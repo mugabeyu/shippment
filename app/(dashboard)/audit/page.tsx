@@ -72,7 +72,7 @@ export default function AuditLogs() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="text-xs text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
+            <thead className="text-sm text-white/40 uppercase bg-slate-50 border-b border-white/[0.06]">
               <tr>
                 <th className="px-6 py-4 font-medium">Action</th>
                 <th className="px-6 py-4 font-medium">Staff</th>
@@ -85,19 +85,19 @@ export default function AuditLogs() {
               {filtered.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${actionColors[log.action] || 'bg-slate-100 text-slate-700'}`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 text-sm font-medium rounded-full ${actionColors[log.action] || 'bg-slate-100 text-slate-700'}`}>
                       {formatAction(log.action)}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-white/90 font-medium">{log.staffName || 'System'}</div>
-                    <div className="text-xs text-white/40">{log.staffEmail || 'N/A'}</div>
+                    <div className="text-sm text-white/40">{log.staffEmail || 'N/A'}</div>
                   </td>
-                  <td className="px-6 py-4 text-xs text-slate-600">
+                  <td className="px-6 py-4 text-sm text-slate-600">
                     {JSON.stringify(log.details || {}).substring(0, 100) || '—'}
                   </td>
-                  <td className="px-6 py-4 text-xs text-white/40">{log.ipAddress || '—'}</td>
-                  <td className="px-6 py-4 text-xs text-white/40 whitespace-nowrap">
+                  <td className="px-6 py-4 text-sm text-white/40">{log.ipAddress || '—'}</td>
+                  <td className="px-6 py-4 text-sm text-white/40 whitespace-nowrap">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString() : '—'}
                   </td>
                 </tr>
