@@ -26,7 +26,7 @@ export function downloadCSV(filename: string, rows: (string | number)[][]) {
 /** Capture the receipt DOM element as a high-resolution canvas. */
 async function captureElement(element: HTMLElement): Promise<HTMLCanvasElement> {
   return html2canvas(element, {
-    backgroundColor: '#12141C',
+    backgroundColor: '#FFFFFF',
     scale: 3,
     logging: false,
     allowTaint: true,

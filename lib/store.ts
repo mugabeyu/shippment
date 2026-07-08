@@ -30,6 +30,7 @@ export interface Staff {
 }
 
 export interface Shipment {
+  ratePerKg: number;
   id: string;
   trackingNumber: string;
   customerId: string;

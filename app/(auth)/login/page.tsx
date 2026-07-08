@@ -70,11 +70,18 @@ export default function Login() {
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    let active = true;
+    // Use getUser() (server-validated) instead of getSession() (local cache) so we
+    // don't redirect on a session the dashboard may have just invalidated. This
+    // prevents a /login <-> /dashboard redirect loop for non-active staff.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (active && user) {
         router.replace('/dashboard');
       }
     });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   const validateForm = (): boolean => {
