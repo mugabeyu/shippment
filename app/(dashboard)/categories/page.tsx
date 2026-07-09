@@ -94,7 +94,7 @@ export default function Categories() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-semibold text-white/90">{t('Categories & Shipping Items')}</h1>
-          <p className="text-xs text-white/40 mt-1">{t('Create categories, then add items with Aller (Mauritius→Madagascar) and Retour (Madagascar→Mauritius) pricing.')}</p>
+          <p className="text-xs text-white/40 mt-1">{t('Create categories, then add items with Aller (Madagascar→Mauritius) and Retour (Mauritius→Madagascar) pricing.')}</p>
         </div>
         <button onClick={openNewCat} className="btn-primary">
           <Plus className="w-5 h-5 mr-2" /> {t('New Category')}
@@ -122,7 +122,7 @@ export default function Categories() {
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-white/90">{cat.name}</h3>
                       <p className="text-xs text-white/40 mt-0.5">
-                        {items.length} item{items.length !== 1 ? 's' : ''}
+                        {items.length} {items.length !== 1 ? t('items') : t('item')}
                         {cat.description ? ` — ${cat.description}` : ''}
                       </p>
                     </div>
@@ -148,9 +148,9 @@ export default function Categories() {
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-white/90 block truncate">{it.item}</span>
                             <div className="flex gap-3 mt-1 text-xs">
-                              <span className="text-emerald-400">Aller: {it.allerPrice.toLocaleString()} {currency}</span>
+                              <span className="text-emerald-400">{t('Aller')}: {it.allerPrice.toLocaleString()} {currency}</span>
                               <span className="text-amber-400">
-                                Retour: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} {currency}` : '—'}
+                                {t('Retour')}: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} {currency}` : '—'}
                               </span>
                             </div>
                           </div>
@@ -194,17 +194,9 @@ export default function Categories() {
           <form onSubmit={handleAddItem} className="p-5 space-y-5">
             <div>
               <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Category')}</label>
-              <select
-                required
-                value={itemModalCategoryId}
-                onChange={(e) => setItemModalCategoryId(e.target.value)}
-                className="input-field"
-              >
-                <option value="" disabled>{t('Select a category')}</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <div className="flex items-center px-4 py-2.5 bg-[#1E1E2E] border border-white/[0.08] rounded-xl text-white/90">
+                {categories.find((c) => c.id === itemModalCategoryId)?.name || t('Unknown Category')}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Item Name')}</label>
@@ -214,12 +206,12 @@ export default function Categories() {
               <div>
                 <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}</label>
                 <input required type="number" min="0" value={newItem.allerPrice} onChange={(e) => setNewItem({ ...newItem, allerPrice: e.target.value })} className="input-field" placeholder="500" />
-                <p className="text-xs text-white/30 mt-1">{t('Mauritius → Madagascar')}</p>
+                <p className="text-xs text-white/30 mt-1">{t('Madagascar → Mauritius')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}</label>
                 <input type="number" min="0" value={newItem.retourPrice} onChange={(e) => setNewItem({ ...newItem, retourPrice: e.target.value })} className="input-field" placeholder={t('Leave empty if N/A')} />
-                <p className="text-xs text-white/30 mt-1">{t('Madagascar → Mauritius')}</p>
+                <p className="text-xs text-white/30 mt-1">{t('Mauritius → Madagascar')}</p>
               </div>
             </div>
             <div className="pt-4 flex justify-end space-x-3">

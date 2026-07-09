@@ -133,7 +133,7 @@ export default function CustomerDetail() {
       <div className="card overflow-hidden">
         <div className="p-4 border-b border-white/[0.06] flex items-center">
           <Package className="w-5 h-5 text-amber-500 mr-2" />
-          <h2 className="text-base font-semibold text-white/90">Shipments</h2>
+          <h2 className="text-base font-semibold text-white/90">{t('Shipments')}</h2>
         </div>
         {customerShipments.length === 0 ? (
           <div className="p-8 text-center text-white/40">{t('No shipments found for this customer.')}</div>

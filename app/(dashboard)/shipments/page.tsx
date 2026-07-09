@@ -463,7 +463,7 @@ export default function Shipments() {
                             </div>
                           ))}
                           {customers.filter((c) => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
-                            <div className="px-3 py-2.5 text-sm text-white/40">No customers found</div>
+                            <div className="px-3 py-2.5 text-sm text-white/40">{t('No customers found')}</div>
                           )}
                         </div>
                       )}
@@ -473,8 +473,8 @@ export default function Shipments() {
                   {/* Route Direction */}
                   <Field label={t('Route Direction')}>
                     <select value={routeDirection} onChange={(e) => setRouteDirection(e.target.value as 'aller' | 'retour')} className={modalInput}>
-                      <option value="aller">{t('Aller (Mauritius → Madagascar)')}</option>
-                      <option value="retour">{t('Retour (Madagascar → Mauritius)')}</option>
+                      <option value="aller">{t('Aller (Madagascar → Mauritius)')}</option>
+                      <option value="retour">{t('Retour (Mauritius → Madagascar)')}</option>
                     </select>
                   </Field>
 
@@ -654,7 +654,7 @@ export default function Shipments() {
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setReceiptShipment(null)}>
             <div className="bg-[#12141C] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
               <div className="bg-navy-800 border-b border-white/10 px-5 py-4 flex items-center justify-between shrink-0">
-                <div><h2 className="font-bold text-lg text-white">Receipt</h2><p className="text-xs text-blue-300">{rc.trackingNumber}</p></div>
+                <div><h2 className="font-bold text-lg text-white">{t('Receipt')}</h2><p className="text-xs text-blue-300">{rc.trackingNumber}</p></div>
                 <button onClick={() => setReceiptShipment(null)} className="text-white/60 hover:text-white hover:rotate-90 transition-all duration-300 p-1.5 rounded-xl hover:bg-white/10"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-5 overflow-y-auto flex-1" id="receipt-root">

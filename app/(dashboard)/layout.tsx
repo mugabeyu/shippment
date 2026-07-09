@@ -49,6 +49,7 @@ const DEFAULT_NAV: NavItem[] = [
   { path: '/offers', label: 'Offers', icon: 'Gift' },
   { path: '/expenses', label: 'Expenses', icon: 'DollarSign' },
   { path: '/reports', label: 'Reports', icon: 'BarChart3' },
+  { path: '/audit', label: 'Audit Logs', icon: 'AlertTriangle' },
   { path: '/notifications', label: 'Notifications', icon: 'Bell' },
 
   { path: '/settings', label: 'Settings', icon: 'Settings' },
@@ -84,6 +85,11 @@ export default function DashboardLayout({ children }: LayoutProps) {
   // Ensure Expenses is always in the nav
   if (!baseNav.some((item) => item.path === '/expenses')) {
     baseNav.splice(4, 0, { path: '/expenses', label: 'Expenses', icon: 'DollarSign' });
+  }
+  // Ensure Audit Logs is always in the nav (below Reports) for staff activity monitoring
+  if (!baseNav.some((item) => item.path === '/audit')) {
+    const reportsIdx = baseNav.findIndex((item) => item.path === '/reports');
+    baseNav.splice(reportsIdx + 1, 0, { path: '/audit', label: 'Audit Logs', icon: 'AlertTriangle' });
   }
   const navItems: ResolvedNavItem[] = baseNav
     .map((item: NavItem) => ({
@@ -285,7 +291,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               </span>
             </div>
             <ul className="space-y-1.5 px-2 mb-5">
-              {navItems.filter(i => ['Reports','Notifications'].includes(i.label)).map((item) => {
+              {navItems.filter(i => ['Reports','Audit Logs','Notifications'].includes(i.label)).map((item) => {
                 const Icon = item.component;
                 const isActive = pathname.startsWith(item.path);
                 return (
@@ -358,7 +364,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
             className={`flex items-center w-full mt-2 px-2 py-1.5 text-red-400 hover:bg-red-500/5 hover:text-red-300 rounded-lg transition-all duration-200 text-sm font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Logout</span>
+            <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{t('Logout')}</span>
           </button>
         </div>
       </aside>
@@ -383,7 +389,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="hidden md:block text-sm text-white/25 font-mono tracking-wide">
+            <span className="text-sm text-orange-400 font-mono tracking-wide">
               {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
             </span>
             <button
@@ -443,8 +449,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
               <p className="text-base text-white/30">{t('Logout in')} {sessionWarning.remainingMinutes}{t('min.')}</p></div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setSessionWarning(null)} className="px-4 py-2 text-sm text-white/30 hover:text-white transition-colors">Dismiss</button>
-              <button onClick={async () => { setSessionWarning(null); await handleLogout(); }} className="btn-primary">Logout</button>
+              <button onClick={() => setSessionWarning(null)} className="px-4 py-2 text-sm text-white/30 hover:text-white transition-colors">{t('Dismiss')}</button>
+              <button onClick={async () => { setSessionWarning(null); await handleLogout(); }} className="btn-primary">{t('Logout')}</button>
             </div>
           </div>
         </div>

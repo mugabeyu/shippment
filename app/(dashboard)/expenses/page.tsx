@@ -164,7 +164,7 @@ export default function Expenses() {
                 <tr key={expense.id} className="hover:bg-[#1A1C24] transition-all duration-200">
                   <td className="px-6 py-4 font-mono text-sm text-white/40">{expense.date}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2.5 py-1 bg-[#1E1E2E] border border-white/[0.06] rounded-lg text-sm font-medium text-white/70">{expense.category}</span>
+                    <span className="px-2.5 py-1 bg-[#1E1E2E] border border-white/[0.06] rounded-lg text-sm font-medium text-white/70">{t(expense.category)}</span>
                   </td>
                   <td className="px-6 py-4 font-semibold text-red-400">
                     - {expense.amount.toLocaleString()} {currency}
@@ -208,8 +208,8 @@ export default function Expenses() {
                 <div>
                   <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1.5">{t('Category')}</label>
                   <select required value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className="input-field">
-                    <option value="">Select...</option>
-                    {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <option value="">{t('Select...')}</option>
+                    {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{t(c)}</option>)}
                   </select>
                 </div>
               </div>

@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
 
     const finalAmount = Math.max(0, basePrice - discountAmount);
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
-    const origin = routeDirection === 'retour' ? 'Madagascar' : 'Mauritius';
-    const destination = routeDirection === 'retour' ? 'Mauritius' : 'Madagascar';
+    const origin = routeDirection === 'retour' ? 'Mauritius' : 'Madagascar';
+    const destination = routeDirection === 'retour' ? 'Madagascar' : 'Mauritius';
     // Derive category from first line item for backward compat
     const category = lineItems[0]?.categoryName || lineItems[0]?.itemName || '';
 

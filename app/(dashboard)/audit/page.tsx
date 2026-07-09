@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { useAuditLogs, useAppConfig } from '@/lib/swr';
 import { Search, Filter } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-
-function formatAction(action: string) {
-  return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-}
+import { describeAudit, actionLabel } from '@/lib/auditDescribe';
 
 export default function AuditLogs() {
   const t = useT();
@@ -67,7 +64,7 @@ export default function AuditLogs() {
               className="input-field pl-10 pr-8"
             >
               <option value="">{t('All Actions')}</option>
-              {uniqueActions.map((a) => <option key={a} value={a}>{formatAction(a)}</option>)}
+              {uniqueActions.map((a) =>                <option key={a} value={a}>{actionLabel(a)}</option>)}
             </select>
           </div>
         </div>
@@ -87,16 +84,16 @@ export default function AuditLogs() {
               {filtered.map((log) => (
                 <tr key={log.id} className="hover:bg-[#1A1C24] transition-colors">
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 text-sm font-medium rounded-full ${actionColors[log.action] || 'bg-[#1E1E2E] text-white/70'}`}>
-                      {formatAction(log.action)}
-                    </span>
+                      <span className={`inline-flex items-center px-2.5 py-1 text-sm font-medium rounded-full ${actionColors[log.action] || 'bg-[#1E1E2E] text-white/70'}`}>
+                       {actionLabel(log.action)}
+                      </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-white/90 font-medium">{log.staffName || 'System'}</div>
                     <div className="text-sm text-white/40">{log.staffEmail || 'N/A'}</div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-white/60">
-                    {JSON.stringify(log.details || {}).substring(0, 100) || '—'}
+                   <td className="px-6 py-4 text-sm text-white/60">
+                    {describeAudit(log.action, log.details) || '—'}
                   </td>
                   <td className="px-6 py-4 text-sm text-white/40">{log.ipAddress || '—'}</td>
                   <td className="px-6 py-4 text-sm text-white/40 whitespace-nowrap">

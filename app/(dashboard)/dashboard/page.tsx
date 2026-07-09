@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useShipments, useCustomers, useOffers, useSettings, useAppConfig, useExpenses } from '@/lib/swr';
 import { Package, TrendingUp, DollarSign, Clock, Trophy, ArrowUpRight, ArrowDownRight, Receipt, Zap } from 'lucide-react';
 import {
@@ -11,7 +12,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell } from 'recharts';
+  Cell
+} from 'recharts';
 import type { ComponentType } from 'react';
 import { useT } from '@/lib/i18n';
 
@@ -51,6 +53,7 @@ function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: 
 
 export default function Dashboard() {
   const t = useT();
+  const router = useRouter();
   const { shipments, loading: shipmentsLoading } = useShipments();
   const { customers, loading: customersLoading } = useCustomers();
   const { offers } = useOffers();
@@ -106,7 +109,7 @@ export default function Dashboard() {
       <div className="space-y-6">
         <div className="skeleton h-10 w-56" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => (
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="card-glow p-5">
               <div className="skeleton h-3 w-20 mb-3" />
               <div className="skeleton h-8 w-32 mb-2" />
@@ -253,7 +256,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-5">
             <Trophy className="w-5 h-5 text-amber-400" />
             <div>
-              <h2 className="font-display text-xl text-white tracking-tight">{t('Top Shippers')}</h2>
+              <h2 className="font-display text-xl text-white tracking-tight">{t('Top Shippers/customers')}</h2>
               <p className="text-sm text-white/25">{t('By total volume')}</p>
             </div>
           </div>
@@ -261,16 +264,16 @@ export default function Dashboard() {
             {topCustomers.map((c, i) => (
               <div
                 key={c.id}
-                className="group flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.03] transition-all duration-200 hover:bg-white/[0.05] hover:border-white/[0.08] hover:translate-x-1"
+                className="group flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.03] transition-all duration-200 hover:bg-white/[0.05] hover:border-white/[0.08] hover:translate-x-1 cursor-pointer"
                 style={{ animation: `fadeIn 0.3s ease-out ${0.2 + i * 0.06}s forwards`, opacity: 0 }}
+                onClick={() => router.push(`/customer/${c.id}`)}
               >
                 <div className="flex items-center gap-3">
-                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-                    i === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                     i === 1 ? 'bg-white/5 text-white/50 border border-white/10' :
-                    i === 2 ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                    'bg-white/[0.02] text-white/30 border border-white/[0.05]'
-                  }`}>
+                      i === 2 ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                        'bg-white/[0.02] text-white/30 border border-white/[0.05]'
+                    }`}>
                     {i + 1}
                   </span>
                   <div>
@@ -285,7 +288,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card-glow p-6">
-          <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Loyalty Progress')}</h2>
+          <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Next offer Progress')}</h2>
           <p className="text-sm text-white/25 mb-5">{t('Next')} {target}kg {t('bonus')}: {activeOffer?.rewardKg ?? 2}kg {t('free')}</p>
           <div className="space-y-4">
             {closeToBonus.map((c, i) => {

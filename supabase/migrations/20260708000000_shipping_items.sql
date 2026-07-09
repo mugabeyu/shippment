@@ -1,7 +1,7 @@
 -- ============================================
 -- Shipping Items — per-item pricing with Aller/Retour rates
--- Aller = Mauritius → Madagascar
--- Retour = Madagascar → Mauritius
+-- Aller = Madagascar → Mauritius
+-- Retour = Mauritius → Madagascar
 -- Each item belongs to a category (created via the Categories page).
 -- ============================================
 

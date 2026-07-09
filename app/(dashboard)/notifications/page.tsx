@@ -4,17 +4,7 @@ import React, { useState } from 'react';
 import { useAuditLogs, useAppConfig } from '@/lib/swr';
 import { Search, Filter, Activity as ActivityIcon, User, Clock } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-
-function formatAction(action: string) {
-  return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
-function summarizeDetails(details: Record<string, any> | null) {
-  if (!details || Object.keys(details).length === 0) return '';
-  return Object.entries(details)
-    .map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}: ${v}`)
-    .join(' · ');
-}
+import { describeAudit, actionLabel } from '@/lib/auditDescribe';
 
 export default function Activity() {
   const t = useT();
@@ -81,7 +71,7 @@ export default function Activity() {
               className="input-field pl-10 pr-8"
             >
               <option value="">{t('All Actions')}</option>
-              {uniqueActions.map((a) => <option key={a} value={a}>{formatAction(a)}</option>)}
+               {uniqueActions.map((a) => <option key={a} value={a}>{actionLabel(a)}</option>)}
             </select>
           </div>
         </div>
@@ -97,14 +87,14 @@ export default function Activity() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <h3 className="text-sm font-semibold text-white/90">{formatAction(action(log))}</h3>
+                    <h3 className="text-sm font-semibold text-white/90">{actionLabel(action(log))}</h3>
                     <span className="flex items-center text-sm text-slate-400 shrink-0">
                       <Clock className="w-3.5 h-3.5 mr-1" />
                       {createdAt(log) ? new Date(createdAt(log)).toLocaleString() : '—'}
                     </span>
                   </div>
-                  {summarizeDetails(details(log)) && (
-                    <p className="text-sm text-white/60 leading-relaxed">{summarizeDetails(details(log))}</p>
+                  {describeAudit(action(log), details(log)) && (
+                    <p className="text-sm text-white/60 leading-relaxed">{describeAudit(action(log), details(log))}</p>
                   )}
                   <div className="flex items-center mt-1.5 text-sm text-white/40">
                     <User className="w-3.5 h-3.5 mr-1.5" />

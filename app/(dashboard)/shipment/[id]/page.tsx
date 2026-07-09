@@ -216,7 +216,7 @@ export default function ShipmentDetail() {
                 <label className="block text-sm font-medium uppercase tracking-wider text-white/40 mb-1">{t('Route')}</label>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-[#1A1C24] border border-white/[0.06] rounded-xl p-3">
                   <MapPin className="w-4 h-4 text-white/25" />
-                  {shipment.routeDirection === 'retour' ? t('Retour (Madagascar → Mauritius)') : t('Aller (Mauritius → Madagascar)')}
+                  {shipment.routeDirection === 'retour' ? t('Retour (Mauritius → Madagascar)') : t('Aller (Madagascar → Mauritius)')}
                 </div>
               </div>
               <div>

@@ -26,8 +26,8 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
   const finalAmount = shipment.finalAmount ?? Math.max(0, subtotal - discountAmount);
 
   const routeLabel = shipment.routeDirection === 'retour'
-    ? 'Retour (Madagascar \u2192 Mauritius)'
-    : 'Aller (Mauritius \u2192 Madagascar)';
+    ? 'Retour (Mauritius \u2192 Madagascar)'
+    : 'Aller (Madagascar \u2192 Mauritius)';
 
   const totalWeight = lineItems.length > 0
     ? lineItems.reduce((sum, li) => sum + li.weightKg * li.quantity, 0)
