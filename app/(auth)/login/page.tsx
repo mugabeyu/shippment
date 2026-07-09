@@ -212,7 +212,12 @@ export default function Login() {
         })
       });
 
-      const result = await res.json();
+      let result: any;
+      try {
+        result = await res.json();
+      } catch {
+        throw new Error(`Registration failed (HTTP ${res.status})`);
+      }
       if (!res.ok) {
         throw new Error(result.error || 'Registration failed');
       }
@@ -468,7 +473,7 @@ export default function Login() {
                   <div className="text-center py-6 space-y-4">
                     <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
                     <h3 className="text-xl font-bold text-white/90">Registration Complete</h3>
-                    <p className="text-sm text-slate-600">Your account has been created and is pending approval. You can sign in once an administrator approves your account.</p>
+                    <p className="text-sm text-red-400">Your account has been created and is pending approval. You can sign in once an administrator approves your account.</p>
                     <button
                       type="button"
                       onClick={() => { setIsRegister(false); setRegSuccess(false); }}

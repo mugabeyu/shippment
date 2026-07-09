@@ -1,11 +1,24 @@
 export function mapShipment(row: any) {
+  const lineItems = (row.line_items || row.shipment_line_items || []).map((li: any) => ({
+    id: li.id,
+    shipmentId: li.shipment_id,
+    shippingItemId: li.shipping_item_id,
+    itemName: li.item_name,
+    categoryName: li.category_name,
+    quantity: li.quantity,
+    weightKg: li.weight_kg,
+    unitPrice: li.unit_price,
+    lineTotal: li.line_total,
+    createdAt: li.created_at,
+  }));
+
   return {
     id: row.id,
     trackingNumber: row.tracking_number,
     customerId: row.customer_id,
-    origin: row.origin,
-    destination: row.destination,
-    category: row.category,
+    origin: row.origin || 'Mauritius',
+    destination: row.destination || 'Madagascar',
+    category: row.category || '',
     weightKg: row.weight_kg,
     quantity: row.quantity,
     description: row.description,
@@ -23,6 +36,9 @@ export function mapShipment(row: any) {
     basePrice: row.base_price,
     discountAmount: row.discount_amount,
     finalAmount: row.final_amount,
+    shippingItemId: row.shipping_item_id,
+    routeDirection: row.route_direction,
+    lineItems,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     customer: row.customer ? {

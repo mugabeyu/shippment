@@ -35,7 +35,12 @@ async function request<T>(
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
-  return camelizeKeys(await response.json());
+  const text = await response.text();
+  try {
+    return camelizeKeys(JSON.parse(text));
+  } catch {
+    return {} as T;
+  }
 }
 
 export const api = {
@@ -130,6 +135,13 @@ export const api = {
   // Config
   getConfig: () => request<Record<string, any>>('/config'),
   getConfigKey: (key: string) => request<{ key: string; value: any }>(`/config/${encodeURIComponent(key)}`),
+
+  // Shipping Items
+  getShippingItems: () => request<any[]>('/shipping-items'),
+  getShippingItem: (id: string) => request<any>(`/shipping-items/${id}`),
+  createShippingItem: (data: { categoryId: string; item: string; allerPrice: number; retourPrice: number | null }) => request<any>('/shipping-items', { method: 'POST', body: JSON.stringify(data) }),
+  updateShippingItem: (id: string, data: any) => request<any>(`/shipping-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteShippingItem: (id: string) => request<any>(`/shipping-items/${id}`, { method: 'DELETE' }),
 };
 
   // Config

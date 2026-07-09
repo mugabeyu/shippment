@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSettings, useAppConfig, type Settings as SettingsType, type Route } from '@/lib/swr';
-import { genId } from '@/lib/store';
-import { Building2, Map, CreditCard, Save, Plus, Trash2, X } from 'lucide-react';
+import { useSettings, useAppConfig, type Settings as SettingsType } from '@/lib/swr';
+import { Building2, CreditCard, Save, Plus, X } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 export default function Settings() {
+  const t = useT();
   const { settings, loading, error, updateSettings } = useSettings();
   const { config } = useAppConfig();
   const defaults = useMemo(() => config?.defaults || {}, [config]);
@@ -16,11 +17,9 @@ export default function Settings() {
     address: '',
     currency: defaults.currency || 'MGA',
     defaultRatePerKg: defaults.defaultRatePerKg || 15000,
-    routes: defaults.routes || [],
     paymentMethods: defaults.paymentMethods || []
   });
   const [saved, setSaved] = useState(false);
-  const [newRoute, setNewRoute] = useState({ from: '', to: '' });
   const [newMethod, setNewMethod] = useState('');
 
   useEffect(() => {
@@ -32,7 +31,6 @@ export default function Settings() {
         address: settings.address || '',
         currency: settings.currency || defaults.currency || 'MGA',
         defaultRatePerKg: settings.defaultRatePerKg || defaults.defaultRatePerKg || 15000,
-        routes: settings.routes || [],
         paymentMethods: settings.paymentMethods || []
       });
     }
@@ -49,22 +47,10 @@ export default function Settings() {
       address: draft.address,
       currency: draft.currency,
       defaultRatePerKg: draft.defaultRatePerKg,
-      paymentMethods: draft.paymentMethods,
-      routes: draft.routes
+      paymentMethods: draft.paymentMethods
     });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);
-  };
-
-  const addRoute = () => {
-    if (!newRoute.from.trim() || !newRoute.to.trim()) return;
-    const route: Route = { id: genId(), from: newRoute.from, to: newRoute.to, active: true };
-    set('routes', [...draft.routes, route]);
-    setNewRoute({ from: '', to: '' });
-  };
-
-  const removeRoute = (id: string) => {
-    set('routes', draft.routes.filter((r: Route) => r.id !== id));
   };
 
   const addMethod = () => {
@@ -85,31 +71,31 @@ export default function Settings() {
         </div>
       )}
       <div className="flex justify-between items-center">
-        <h1 className="text-lg font-semibold text-white/90">Settings</h1>
+        <h1 className="text-lg font-semibold text-white/90">{t('Settings')}</h1>
       </div>
 
       <section className="card overflow-hidden">
         <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
           <Building2 className="w-5 h-5 text-white/40 mr-3" />
-          <h2 className="text-base font-semibold text-white/90">Company Information</h2>
+          <h2 className="text-base font-semibold text-white/90">{t('Company Information')}</h2>
         </div>
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field label="Company Name">
+          <Field label={t('Company Name')}>
             <input type="text" value={draft.companyName} onChange={(e) => set('companyName', e.target.value)} className="input-field" />
           </Field>
-          <Field label="Contact Email">
+          <Field label={t('Contact Email')}>
             <input type="email" value={draft.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} className="input-field" />
           </Field>
-          <Field label="Phone">
+          <Field label={t('Phone')}>
             <input type="tel" value={draft.phone} onChange={(e) => set('phone', e.target.value)} className="input-field" />
           </Field>
-          <Field label="Currency Code">
+          <Field label={t('Currency Code')}>
             <input type="text" value={draft.currency} onChange={(e) => set('currency', e.target.value)} className="input-field" />
           </Field>
-          <Field label="Default Rate (per kg)">
+          <Field label={t('Default Rate (per kg)')}>
             <input type="number" min="0" value={draft.defaultRatePerKg || ''} onChange={(e) => set('defaultRatePerKg', Number(e.target.value))} className="input-field" />
           </Field>
-          <Field label="Headquarters Address" full>
+          <Field label={t('Headquarters Address')} full>
             <textarea rows={2} value={draft.address} onChange={(e) => set('address', e.target.value)} className="input-field resize-none" />
           </Field>
         </div>
@@ -117,62 +103,34 @@ export default function Settings() {
 
       <section className="card overflow-hidden">
         <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
-          <Map className="w-5 h-5 text-white/40 mr-3" />
-          <h2 className="text-base font-semibold text-white/90">Routes</h2>
-        </div>
-        <div className="p-5 space-y-3">
-          {draft.routes.map((route: Route) => (
-            <div key={route.id} className="flex items-center justify-between p-4 bg-[#1A1C24] border border-white/[0.06] rounded-lg">
-              <div className="flex items-center space-x-4">
-                <span className="font-medium text-white/90">{route.from}</span>
-                <span className="text-amber-500">&#8646;</span>
-                <span className="font-medium text-white/90">{route.to}</span>
-              </div>
-              <button onClick={() => removeRoute(route.id)} aria-label="Remove route" className="p-1.5 text-white/40 hover:text-red-500 transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <input type="text" placeholder="From" value={newRoute.from} onChange={(e) => setNewRoute({ ...newRoute, from: e.target.value })} className="input-field" />
-            <input type="text" placeholder="To" value={newRoute.to} onChange={(e) => setNewRoute({ ...newRoute, to: e.target.value })} className="input-field" />
-            <button onClick={addRoute} className="btn-primary whitespace-nowrap">
-              <Plus className="w-4 h-4" /> Add Route
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="card overflow-hidden">
-        <div className="p-4 border-b border-white/[0.06] flex items-center bg-[#1A1C24]">
           <CreditCard className="w-5 h-5 text-white/40 mr-3" />
-          <h2 className="text-base font-semibold text-white/90">Payment Methods</h2>
+          <h2 className="text-base font-semibold text-white/90">{t('Payment Methods')}</h2>
         </div>
         <div className="p-5 space-y-3">
           {draft.paymentMethods.map((method: string) => (
             <div key={method} className="flex items-center justify-between p-3 bg-[#1A1C24] border border-white/[0.06] rounded-lg">
-              <span className="text-slate-700">{method}</span>
+              <span className="text-white/80">{method}</span>
               <button onClick={() => set('paymentMethods', draft.paymentMethods.filter((m: string) => m !== method))} aria-label={`Remove ${method}`} className="p-1.5 text-white/40 hover:text-red-500 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ))}
           <div className="flex gap-3 pt-2">
-            <input type="text" placeholder="e.g. Card, PayPal" value={newMethod} onChange={(e) => setNewMethod(e.target.value)} className="input-field" />
+            <input type="text" placeholder={t('e.g. Cash, Bank Transfer')} value={newMethod} onChange={(e) => setNewMethod(e.target.value)} className="input-field" />
             <button onClick={addMethod} className="btn-primary whitespace-nowrap">
-              <Plus className="w-4 h-4" /> Add
+              <Plus className="w-4 h-4" /> {t('Add')}
             </button>
           </div>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <div className="flex justify-end">
+      <div className="flex justify-end">
           <button onClick={handleSave} className="btn-primary">
             <Save className="w-5 h-5 mr-2" />
-            {saved ? 'Saved!' : 'Save Changes'}
+            {saved ? t('Saved!') : t('Save Changes')}
           </button>
-        </div>
       </div>
+    </div>
   );
 }
 
@@ -184,4 +142,3 @@ function Field({ label, full, children }: { label: string; full?: boolean; child
     </div>
   );
 }
-

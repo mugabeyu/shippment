@@ -29,6 +29,18 @@ export interface Staff {
   last_login?: string;
 }
 
+export interface ShipmentLineItem {
+  id: string;
+  shipmentId: string;
+  shippingItemId?: string;
+  itemName: string;
+  categoryName?: string;
+  quantity: number;
+  weightKg: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
 export interface Shipment {
   ratePerKg: number;
   id: string;
@@ -54,6 +66,9 @@ export interface Shipment {
   basePrice?: number;
   discountAmount?: number;
   finalAmount?: number;
+  shippingItemId?: string;
+  routeDirection?: 'aller' | 'retour';
+  lineItems?: ShipmentLineItem[];
 }
 
 export interface Category {
@@ -82,6 +97,16 @@ export interface Route {
   active: boolean;
 }
 
+export interface ShippingItem {
+  id: string;
+  categoryId: string;
+  categoryName?: string; // populated via JOIN in some queries
+  item: string;
+  allerPrice: number;
+  retourPrice: number | null; // null = not available for Retour
+  active: boolean;
+}
+
 export interface Settings {
   companyName: string;
   contactEmail: string;
@@ -89,7 +114,7 @@ export interface Settings {
   address: string;
   currency: string;
   defaultRatePerKg: number;
-  routes: Route[];
+  routes?: Route[];
   paymentMethods: string[];
   loyaltyEnabled?: boolean;
   taxEnabled?: boolean;

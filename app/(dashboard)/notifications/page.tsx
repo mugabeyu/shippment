@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuditLogs, useAppConfig } from '@/lib/swr';
 import { Search, Filter, Activity as ActivityIcon, User, Clock } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 function formatAction(action: string) {
   return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -16,6 +17,7 @@ function summarizeDetails(details: Record<string, any> | null) {
 }
 
 export default function Activity() {
+  const t = useT();
   const { logs, loading, error } = useAuditLogs();
   const { config } = useAppConfig();
   const actionColors = config?.audit_actions || {};
@@ -48,14 +50,14 @@ export default function Activity() {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Activity</h1>
-          <p className="text-sm text-white/40 mt-0.5">Every action performed across the system, and who did it.</p>
+          <h1 className="text-lg font-semibold text-white/90">{t('Activity')}</h1>
+          <p className="text-sm text-white/40 mt-0.5">{t('Every action performed across the system, and who did it.')}</p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-600 rounded-lg p-4">
-          Failed to load activity: {error}
+          <div className="bg-red-500/10 border border-red-500/30 text-red-600 rounded-lg p-4">
+          {t('Failed to load activity:')} {error}
         </div>
       )}
 
@@ -65,7 +67,7 @@ export default function Activity() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by staff name, email or action..."
+              placeholder={t('Search by staff name, email or action...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field pl-10"
@@ -78,19 +80,19 @@ export default function Activity() {
               onChange={(e) => setActionFilter(e.target.value)}
               className="input-field pl-10 pr-8"
             >
-              <option value="">All Actions</option>
+              <option value="">{t('All Actions')}</option>
               {uniqueActions.map((a) => <option key={a} value={a}>{formatAction(a)}</option>)}
             </select>
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-white/40">No activity to display.</div>
+          <div className="p-8 text-center text-white/40">{t('No activity to display.')}</div>
         ) : (
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-white/[0.06]">
             {filtered.map((log) => (
-              <div key={log.id || createdAt(log)} className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
-                <div className={`p-2.5 rounded-lg shrink-0 ${actionColors[action(log)] || 'bg-slate-100 text-slate-700'}`}>
+              <div key={log.id || createdAt(log)} className="flex items-start gap-4 p-4 hover:bg-[#1A1C24] transition-colors">
+                <div className={`p-2.5 rounded-lg shrink-0 ${actionColors[action(log)] || 'bg-[#1E1E2E] text-white/70'}`}>
                   <ActivityIcon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -102,11 +104,11 @@ export default function Activity() {
                     </span>
                   </div>
                   {summarizeDetails(details(log)) && (
-                    <p className="text-sm text-slate-600 leading-relaxed">{summarizeDetails(details(log))}</p>
+                    <p className="text-sm text-white/60 leading-relaxed">{summarizeDetails(details(log))}</p>
                   )}
                   <div className="flex items-center mt-1.5 text-sm text-white/40">
                     <User className="w-3.5 h-3.5 mr-1.5" />
-                    <span className="font-medium text-slate-700">{staffName(log) || 'System'}</span>
+                    <span className="font-medium text-white/70">{staffName(log) || 'System'}</span>
                     {staffEmail(log) && <span className="ml-1">({staffEmail(log)})</span>}
                   </div>
                 </div>

@@ -23,10 +23,12 @@ import {
   Truck,
   ChevronLeft,
   ChevronRight,
-  DollarSign
+  DollarSign,
+  Languages
 } from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
+import { useT, useLangStore } from '@/lib/i18n';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { useAppConfig } from '@/lib/swr';
 import { supabase } from '@/lib/supabase/client';
@@ -69,6 +71,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { sidebarOpen, setSidebarOpen, activeStaffName, activeStaffEmail, activeStaffPhoto } = useUiStore();
+  const t = useT();
+  const { lang, toggle } = useLangStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('sidebarCollapsed') === 'true';
@@ -183,7 +187,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const getBreadcrumbs = () => {
     const path = pathname;
     const segments = path.split('/').filter(Boolean);
-    const crumbs: { label: string; href: string }[] = [{ label: 'Home', href: '/dashboard' }];
+    const crumbs: { label: string; href: string }[] = [{ label: t('Home'), href: '/dashboard' }];
 
     const labels = config?.breadcrumbs || {};
 
@@ -211,7 +215,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           </div>
         </aside>
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-slate-500">Loading layout...</div>
+          <div className="text-white/50">Loading layout...</div>
         </main>
       </div>
     );
@@ -251,7 +255,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         <nav className="flex-1 overflow-y-auto py-4 premium-scroll">
           <div className="px-4 mb-2">
               <span className={`text-xs font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                OPERATIONS
+                {t('OPERATIONS')}
               </span>
             </div>
             <ul className="space-y-1.5 px-2 mb-5">
@@ -267,7 +271,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                       title={sidebarCollapsed ? item.label : undefined}
                     >
                       <Icon className={`w-[22px] h-[22px] mr-3 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-white/25 group-hover:text-white/60'}`} />
-                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{t(item.label)}</span>
                     {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,217,255,0.5)]" />}
                   </Link>
                 </li>
@@ -277,7 +281,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
           <div className="px-4 mb-2">
               <span className={`text-xs font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                MANAGEMENT
+                {t('MANAGEMENT')}
               </span>
             </div>
             <ul className="space-y-1.5 px-2 mb-5">
@@ -293,7 +297,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                       title={sidebarCollapsed ? item.label : undefined}
                     >
                       <Icon className={`w-[22px] h-[22px] mr-3 transition-colors duration-200 ${isActive ? 'text-pink-400' : 'text-white/25'}`} />
-                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{t(item.label)}</span>
                     {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(255,61,129,0.5)]" />}
                   </Link>
                 </li>
@@ -303,7 +307,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
           <div className="px-4 mb-2">
               <span className={`text-xs font-semibold text-white/15 uppercase tracking-[0.2em] ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                SYSTEM
+                {t('SYSTEM')}
               </span>
             </div>
             <ul className="space-y-1.5 px-2">
@@ -319,7 +323,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                       title={sidebarCollapsed ? item.label : undefined}
                     >
                       <Icon className={`w-[22px] h-[22px] mr-3 transition-colors duration-200 ${isActive ? 'text-white/60' : 'text-white/25'}`} />
-                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                    <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{t(item.label)}</span>
                     {isActive && !sidebarCollapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40" />}
                   </Link>
                 </li>
@@ -346,12 +350,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
             </div>
             <div className={`min-w-0 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
               <div className="text-sm font-medium text-white/70 truncate">{activeStaffName}</div>
-              <div className="text-[11px] text-white/25 truncate">Admin</div>
+              <div className="text-[11px] text-white/25 truncate">{t('Admin')}</div>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className={`flex items-center w-full mt-2 px-2 py-1.5 text-white/25 hover:bg-white/[0.03] hover:text-white/60 rounded-lg transition-all duration-200 text-sm font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
+            className={`flex items-center w-full mt-2 px-2 py-1.5 text-red-400 hover:bg-red-500/5 hover:text-red-300 rounded-lg transition-all duration-200 text-sm font-medium ${sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''}`}
           >
             <LogOut className="w-4 h-4 mr-2" />
             <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Logout</span>
@@ -382,6 +386,14 @@ export default function DashboardLayout({ children }: LayoutProps) {
             <span className="hidden md:block text-sm text-white/25 font-mono tracking-wide">
               {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
             </span>
+            <button
+              onClick={toggle}
+              title={lang === 'en' ? 'Translate to French' : 'Traduire en anglais'}
+              className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/20 transition-all duration-200"
+            >
+              <Languages className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-bold tracking-wide text-white/80 uppercase">{lang === 'en' ? 'EN' : 'FR'}</span>
+            </button>
             <div className="relative" ref={profileRef}>
               <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/[0.04] transition-all">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-500/30 to-cyan-400/20 border border-blue-400/10 flex items-center justify-center font-semibold text-base overflow-hidden">
@@ -405,9 +417,9 @@ export default function DashboardLayout({ children }: LayoutProps) {
                     </div>
                   </div>
                   <div className="py-2">
-                    <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-base text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><User className="w-5 h-5 mr-3 text-white/15" /> Profile</Link>
-                    <Link href="/settings" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-base text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><Settings className="w-5 h-5 mr-3 text-white/15" /> Settings</Link>
-                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-base text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all"><LogOut className="w-5 h-5 mr-3" /> Logout</button>
+                    <Link href="/profile" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-base text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><User className="w-5 h-5 mr-3 text-white/15" /> {t('Profile')}</Link>
+                    <Link href="/settings" onClick={() => setShowProfile(false)} className="flex items-center px-4 py-2.5 text-base text-white/40 hover:text-white hover:bg-white/[0.03] transition-all"><Settings className="w-5 h-5 mr-3 text-white/15" /> {t('Settings')}</Link>
+                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-base text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all"><LogOut className="w-5 h-5 mr-3" /> {t('Logout')}</button>
                   </div>
                 </div>
               )}
@@ -427,8 +439,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
               <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
                 <AlertTriangle className="w-6 h-6 text-amber-400" />
               </div>
-              <div><h3 className="text-lg font-semibold text-white">Session Expiring</h3>
-              <p className="text-base text-white/30">Logout in {sessionWarning.remainingMinutes}min.</p></div>
+              <div>              <h3 className="text-lg font-semibold text-white">{t('Session Expiring')}</h3>
+              <p className="text-base text-white/30">{t('Logout in')} {sessionWarning.remainingMinutes}{t('min.')}</p></div>
             </div>
             <div className="flex justify-end gap-3">
               <button onClick={() => setSessionWarning(null)} className="px-4 py-2 text-sm text-white/30 hover:text-white transition-colors">Dismiss</button>

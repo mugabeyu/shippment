@@ -19,12 +19,13 @@ const fetcher = (key: [string, ...any[]]) => {
     case 'notifications': return api.getNotifications(args[0]);
     case 'notifications/unread': return api.getUnreadCount();
     case 'audit': return api.getAuditLogs(args[0]);
+    case 'shipping-items': return api.getShippingItems();
     case 'config': return api.getConfig();
     default: return Promise.resolve(undefined);
   }
 };
 
-export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route, Expense } from './store';
+export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route, ShippingItem, ShipmentLineItem, Expense } from './store';
 
 let configCache: Record<string, any> | null = null;
 
@@ -243,4 +244,26 @@ export function useRoutes() {
     return s.routes || [];
   }, { revalidateOnFocus: false });
   return { routes: data ?? [], loading: isLoading, error: error?.message, reload: () => mutate() };
+}
+
+export function useShippingItems() {
+  const { data, error, isLoading, mutate } = useSWR('shipping-items', () => api.getShippingItems());
+  const items = data ?? [];
+
+  const addItem = useCallback(async (data: any) => {
+    const created = await api.createShippingItem(data);
+    mutate((prev) => [created, ...(prev ?? [])], false);
+    return created;
+  }, [mutate]);
+  const updateItem = useCallback(async (id: string, data: any) => {
+    const updated = await api.updateShippingItem(id, data);
+    mutate((prev) => (prev ?? []).map((i: any) => (i.id === id ? updated : i)), false);
+    return updated;
+  }, [mutate]);
+  const deleteItem = useCallback(async (id: string) => {
+    await api.deleteShippingItem(id);
+    mutate((prev) => (prev ?? []).filter((i: any) => i.id !== id), false);
+  }, [mutate]);
+
+  return { shippingItems: items, loading: isLoading, error: error?.message, reload: () => mutate(), addItem, updateItem, deleteItem };
 }

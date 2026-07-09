@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
   Cell } from 'recharts';
 import type { ComponentType } from 'react';
+import { useT } from '@/lib/i18n';
 
 function calculateFinancials(shipments: any[], expenses: any[], settings: any, config: any) {
   const currency = settings?.currency || config?.defaults?.currency || 'MGA';
@@ -49,6 +50,7 @@ function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: 
 }
 
 export default function Dashboard() {
+  const t = useT();
   const { shipments, loading: shipmentsLoading } = useShipments();
   const { customers, loading: customersLoading } = useCustomers();
   const { offers } = useOffers();
@@ -66,7 +68,11 @@ export default function Dashboard() {
   const activeOffer = offers.find((o) => o.active) ?? offers[0];
   const target = activeOffer?.targetKg ?? config?.defaults?.loyaltyTargetKg ?? 25;
   const topCustomers = [...customers].sort((a, b) => b.totalKgSent - a.totalKgSent).slice(0, 5);
-  const closeToBonus = customers.map((c) => ({ ...c, remaining: target - c.totalKgSent % target })).sort((a, b) => a.remaining - b.remaining).slice(0, 5);
+  const loyaltyCalc = (c: any) => {
+    const milestones = Math.floor(c.totalKgSent / target);
+    return Math.max(0, c.totalKgSent - milestones * (target + (activeOffer?.rewardKg ?? 2)));
+  };
+  const closeToBonus = customers.map((c) => ({ ...c, remaining: target - loyaltyCalc(c) })).sort((a, b) => a.remaining - b.remaining).slice(0, 5);
   const monthly = useMemo(() => {
     const now = new Date();
     const buckets: { key: string; name: string; kg: number; revenue: number }[] = [];
@@ -121,54 +127,54 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between animate-fadeIn">
         <div>
-          <h1 className="text-3xl md:text-4xl font-display text-white tracking-tight">DASHBOARD</h1>
-          <p className="text-sm text-white/30 mt-0.5 uppercase tracking-[0.2em]">Live Operations Overview</p>
+          <h1 className="text-3xl md:text-4xl font-display text-white tracking-tight">{t('DASHBOARD')}</h1>
+          <p className="text-sm text-white/30 mt-0.5 uppercase tracking-[0.2em]">{t('Live Operations Overview')}</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-white/30">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
-          <span>System Online</span>
+          <span>{t('System Online')}</span>
         </div>
       </div>
 
       {/* KPI Cards — staggered entrance */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="Total Revenue"
+          title={t('Total Revenue')}
           value={<AnimatedCounter value={financials.totalRevenue} />}
           suffix={` ${currency}`}
           icon={DollarSign}
           accent="cyan"
-          trend={`${paidShipments} paid shipments`}
+          trend={`${paidShipments} ${t('paid shipments')}`}
           trendUp
           delay="stagger-1"
         />
         <KpiCard
-          title="Total Expenses"
+          title={t('Total Expenses')}
           value={<AnimatedCounter value={financials.totalExpenses} />}
           suffix={` ${currency}`}
           icon={Receipt}
           accent="pink"
-          trend={`${expenses.length} entries`}
+          trend={`${expenses.length} ${t('entries')}`}
           delay="stagger-2"
         />
         <KpiCard
-          title="Net Profit"
+          title={t('Net Profit')}
           value={<AnimatedCounter value={Math.abs(financials.netProfit)} />}
           suffix={` ${currency}`}
           icon={TrendingUp}
           accent={financials.netProfit >= 0 ? 'green' : 'pink'}
-          trend={financials.netProfit >= 0 ? 'Profitable' : 'Loss'}
+          trend={financials.netProfit >= 0 ? t('Profitable') : t('Loss')}
           trendUp={financials.netProfit >= 0}
           delay="stagger-3"
           prefix={financials.netProfit < 0 ? '-' : ''}
         />
         <KpiCard
-          title="Pending"
+          title={t('Pending')}
           value={pendingDeliveries}
           suffix=""
           icon={Clock}
           accent="amber"
-          trend={`${delivered} delivered`}
+          trend={`${delivered} ${t('delivered')}`}
           delay="stagger-4"
           pulseDot
         />
@@ -179,8 +185,8 @@ export default function Dashboard() {
         <div className="lg:col-span-2 card-glow p-6 animate-fadeIn">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-display text-xl text-white tracking-tight">Monthly Volume</h2>
-              <p className="text-sm text-white/25">Shipment KG over the last 7 months</p>
+              <h2 className="font-display text-xl text-white tracking-tight">{t('Monthly Volume')}</h2>
+              <p className="text-sm text-white/25">{t('Shipment KG over the last 7 months')}</p>
             </div>
             <Zap className="w-4 h-4 text-cyan-400" />
           </div>
@@ -212,8 +218,8 @@ export default function Dashboard() {
         </div>
 
         <div className="card-glow p-6 animate-fadeIn">
-          <h2 className="font-display text-xl text-white tracking-tight mb-1">Recent Activity</h2>
-          <p className="text-sm text-white/25 mb-5">Latest 5 shipments</p>
+          <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Recent Activity')}</h2>
+          <p className="text-sm text-white/25 mb-5">{t('Latest 5 shipments')}</p>
           <div className="space-y-2">
             {shipments.slice(0, 5).map((shipment, i) => {
               const customer = customers.find((c) => c.id === shipment.customerId);
@@ -236,7 +242,7 @@ export default function Dashboard() {
                 </div>
               );
             })}
-            {shipments.length === 0 && <div className="text-sm text-white/20 py-4 text-center">No shipments yet</div>}
+            {shipments.length === 0 && <div className="text-sm text-white/20 py-4 text-center">{t('No shipments yet')}</div>}
           </div>
         </div>
       </div>
@@ -247,8 +253,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-5">
             <Trophy className="w-5 h-5 text-amber-400" />
             <div>
-              <h2 className="font-display text-xl text-white tracking-tight">Top Shippers</h2>
-              <p className="text-sm text-white/25">By total volume</p>
+              <h2 className="font-display text-xl text-white tracking-tight">{t('Top Shippers')}</h2>
+              <p className="text-sm text-white/25">{t('By total volume')}</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -279,11 +285,11 @@ export default function Dashboard() {
         </div>
 
         <div className="card-glow p-6">
-          <h2 className="font-display text-xl text-white tracking-tight mb-1">Loyalty Progress</h2>
-          <p className="text-sm text-white/25 mb-5">Next {target}kg bonus: {activeOffer?.rewardKg ?? 2}kg free</p>
+          <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Loyalty Progress')}</h2>
+          <p className="text-sm text-white/25 mb-5">{t('Next')} {target}kg {t('bonus')}: {activeOffer?.rewardKg ?? 2}kg {t('free')}</p>
           <div className="space-y-4">
             {closeToBonus.map((c, i) => {
-              const progress = c.totalKgSent % target;
+              const progress = loyaltyCalc(c);
               const pct = Math.min(progress / target * 100, 100);
               return (
                 <div key={c.id} style={{ animation: `fadeIn 0.3s ease-out ${0.2 + i * 0.06}s forwards`, opacity: 0 }}>
@@ -346,9 +352,9 @@ function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, t
       <div className="font-display text-4xl font-bold text-white tracking-tight mb-1">
         {prefix}<>{value}</>{suffix}
       </div>
-      <div className={`flex items-center text-sm ${trendUp ? 'text-emerald-400' : trend.includes('Loss') || trend.includes('entries') ? 'text-pink-400' : 'text-white/25'}`}>
+      <div className={`flex items-center text-sm ${trendUp ? 'text-emerald-400' : trend.includes('Loss') || trend.includes('Perte') || trend.includes('entries') || trend.includes('entrées') ? 'text-pink-400' : 'text-white/25'}`}>
         {trendUp && <ArrowUpRight className="w-4 h-4 mr-1" />}
-        {!trendUp && trend.includes('Loss') && <ArrowDownRight className="w-4 h-4 mr-1" />}
+        {!trendUp && (trend.includes('Loss') || trend.includes('Perte')) && <ArrowDownRight className="w-4 h-4 mr-1" />}
         {trend}
       </div>
       {/* Sparkline bar */}

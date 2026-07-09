@@ -1,92 +1,132 @@
 'use client';
 
 import React from 'react';
-import type { Shipment, Customer, Settings, Category } from '@/lib/store';
+import type { Shipment, Customer, Settings, Category, ShippingItem } from '@/lib/store';
 
 interface ReceiptContentProps {
   shipment: Shipment;
   customer: Customer | undefined;
   settings: Settings | null;
   categories?: Category[];
+  shippingItems?: ShippingItem[];
 }
 
 const ORANGE = '#D97706';
-const INK = '#000000';
-const PAPER = '#FFFFFF';
-const HAIR = '#E5E7EB';
+const BLACK = '#000000';
+const WHITE = '#FFFFFF';
+const GRAY = '#E5E7EB';
 
-export default function ReceiptContent({ shipment, customer, settings, categories = [] }: ReceiptContentProps) {
-  const company = settings?.companyName || 'La Grande Marque';
+export default function ReceiptContent({ shipment, customer, settings, categories = [], shippingItems = [] }: ReceiptContentProps) {
+  const company = settings?.companyName || 'LA GRANDE MARQUE';
   const currency = settings?.currency || 'MGA';
+  const lineItems = shipment.lineItems || [];
 
-  // 1. Calculations
-  const categoryData = categories.find((c: Category) => c.name === shipment.category);
-  const ratePerKg = categoryData?.pricePerKg ?? settings?.defaultRatePerKg ?? 0;
-  const subtotal = shipment.basePrice ?? (shipment.weightKg * ratePerKg);
+  const subtotal = shipment.basePrice ?? lineItems.reduce((sum, li) => sum + li.unitPrice * li.weightKg * li.quantity, 0);
   const discountAmount = shipment.discountAmount ?? 0;
-  const finalAmount = subtotal - discountAmount;
+  const finalAmount = shipment.finalAmount ?? Math.max(0, subtotal - discountAmount);
+
+  const routeLabel = shipment.routeDirection === 'retour'
+    ? 'Retour (Madagascar \u2192 Mauritius)'
+    : 'Aller (Mauritius \u2192 Madagascar)';
+
+  const totalWeight = lineItems.length > 0
+    ? lineItems.reduce((sum, li) => sum + li.weightKg * li.quantity, 0)
+    : (shipment.weightKg || 0);
+
+  const fmt = (n: number) => n.toLocaleString();
 
   return (
     <div
-      className="p-8 rounded-3xl max-w-sm mx-auto shadow-sm border"
-      style={{ backgroundColor: PAPER, color: INK, borderColor: HAIR, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
+      className="p-6 rounded-2xl max-w-sm mx-auto"
+      style={{ backgroundColor: WHITE, color: BLACK, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact', fontFamily: 'Arial, sans-serif' }}
     >
-      {/* Header */}
+      {/* ============ HEADER ============ */}
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold uppercase" style={{ color: ORANGE }}>{company}</h1>
-        <p className="text-xs font-bold uppercase mt-1">Facture de transport</p>
+        <h1 className="text-[22px] font-extrabold uppercase tracking-tight">
+          <span style={{ color: BLACK }}>LA GRANDE </span>
+          <span style={{ color: ORANGE }}>MARQUE</span>
+        </h1>
+        <p className="text-[11px] font-bold uppercase mt-1 tracking-wider" style={{ color: BLACK }}>
+          Facture de transport
+        </p>
       </div>
 
-      {/* Meta: Includes Tracking, Date, Customer, Phone, Route */}
-      <div className="text-sm py-3 mb-6 font-bold border-y" style={{ borderColor: HAIR }}>
-        <p>N° {shipment.trackingNumber}</p>
-        <p>{shipment.date}</p>
-        <p className="mt-2">Client: {customer?.name || 'N/A'}</p>
-        <p>Tél: {customer?.phone || 'N/A'}</p>
-        <p>Route: {shipment.origin} → {shipment.destination}</p>
+      {/* ============ META ============ */}
+       <div className="text-[11px] leading-relaxed py-3 mb-5 border-t border-b " style={{ borderColor: GRAY, color: BLACK }}>
+        <p><strong>Track Id : </strong>{shipment.trackingNumber}</p>
+        <p><strong>Date : </strong>{shipment.date}</p>
+        <p className="mt-2"><strong>Client : </strong>{customer?.name || 'N/A'}</p>
+        <p><strong>Tél : </strong>{customer?.phone || 'N/A'}</p>
+        <p><strong>Route : </strong>{routeLabel}</p>
+        <p><strong>Statut : </strong>
+          <span style={{ color: shipment.paymentStatus === 'Paid' ? '#059669' : '#DC2626', fontWeight: 700 }}>
+            {shipment.paymentStatus === 'Paid' ? 'Payé' : 'Non payé'}
+          </span>
+        </p>
       </div>
 
-      {/* Shipment Details: Organized as Category/Desc info */}
-      <div className="mb-6 pb-4 border-b" style={{ borderColor: HAIR }}>
-        <div className="space-y-1 font-bold text-sm">
-          <div className="break-words">
-            {shipment.category || 'Colis'} — {shipment.description || 'N/A'}
+      {/* ============ LINE ITEMS ============ */}
+      <div className="mb-5" style={{ color: BLACK }}>
+        {lineItems.length > 0 ? (
+          <div className="space-y-1.5 text-[11px] ">
+            {lineItems.map((li, idx) => {
+              const lineTotal = li.unitPrice * li.weightKg * li.quantity;
+              return (
+                <div key={li.id || idx} className="flex justify-between items-baseline">
+                  <span>
+                    {li.itemName} — {li.weightKg} kg ({li.quantity})
+                  </span>
+                  <span className="font-extrabold" style={{ color: BLACK }}>
+                    {fmt(lineTotal)} {currency}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="text-[10px] font-normal pt-1" style={{ color: '#6B7280' }}>
+              Poids total : {totalWeight} kg | {lineItems.length} article{lineItems.length > 1 ? 's' : ''}
+            </div>
           </div>
-          <div className="break-words">
-            Poids: {shipment.weightKg} kg | Qté: {shipment.quantity} item(s)
+        ) : (
+          <div className="space-y-1 text-[11px] font-semibold">
+            <div className="flex justify-between items-baseline">
+              <span>{shipment.category || 'Colis'} — {shipment.weightKg} kg ({shipment.quantity})</span>
+              <span className="font-extrabold">{fmt(subtotal)} {currency}</span>
+            </div>
           </div>
-          <div className="break-words">
-            Tarif: {ratePerKg.toLocaleString()} {currency}/kg
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Totals Section */}
-      <div className="space-y-2 text-sm font-bold mb-8">
+      {/* ============ TOTALS ============ */}
+      <div className="text-[12px] font-semibold space-y-1.5 mb-6 pt-3 border-t" style={{ borderColor: GRAY, color: BLACK }}>
         <div className="flex justify-between">
           <span>Sous-total</span>
-          <span>{subtotal.toLocaleString()} {currency}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Remise (Universelle)</span>
-          <span>- {discountAmount.toLocaleString()} {currency}</span>
+          <span className="font-bold">{fmt(subtotal)} {currency}</span>
         </div>
 
-        {/* FINAL TOTAL - Bold & Large */}
-        <div className="flex justify-between pt-4 border-t-2" style={{ borderColor: INK }}>
-          <span className="text-lg uppercase">Total à payer</span>
-          <span className="text-2xl" style={{ color: ORANGE }}>
-            {finalAmount.toLocaleString()} {currency}
+        {discountAmount > 0 && (
+          <div className="flex justify-between" style={{ color: '#059669' }}>
+            <span>Remise</span>
+            <span className="font-bold">- {fmt(discountAmount)} {currency}</span>
+          </div>
+        )}
+
+        <div
+          className="flex justify-between pt-2.5 mt-1 border-t-2 text-[13px]"
+          style={{ borderColor: BLACK }}
+        >
+          <span className="uppercase font-extrabold tracking-wide">Total à payer</span>
+          <span className="font-extrabold text-base" style={{ color: ORANGE }}>
+            {fmt(finalAmount)} {currency}
           </span>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="text-center text-xs mt-10 pt-4" style={{ borderTop: `1px solid ${HAIR}` }}>
+      {/* ============ FOOTER ============ */}
+      <div className="text-center text-[10px] pt-4 mt-6" style={{ borderTop: `1px solid ${GRAY}`, color: '#4B5563' }}>
         {settings?.phone && (
-          <p className="font-bold mb-2">{`WhatsApp : ${settings.phone}`}</p>
+          <p className="font-bold mb-1">{`WhatsApp : ${settings.phone}`}</p>
         )}
-        <p className="font-normal">Merci pour votre confiance</p>
+        <p>Merci pour votre confiance</p>
       </div>
     </div>
   );

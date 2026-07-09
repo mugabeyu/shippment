@@ -17,7 +17,6 @@ export async function GET() {
     if (!data || data.length === 0) {
       return NextResponse.json({
         paymentMethods: [],
-        routes: [],
         loyaltyEnabled: true,
         taxEnabled: false,
         taxRate: 0
@@ -27,7 +26,6 @@ export async function GET() {
     return NextResponse.json({
       ...row,
       paymentMethods: row.payment_methods || [],
-      routes: row.routes || [],
       loyaltyEnabled: row.loyalty_enabled ?? true,
       taxEnabled: row.tax_enabled ?? false,
       taxRate: row.tax_rate ?? 0
@@ -39,7 +37,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { companyName, contactEmail, phone, address, currency, defaultRatePerKg, paymentMethods, loyaltyEnabled, taxEnabled, taxRate, routes } = await req.json();
+    const { companyName, contactEmail, phone, address, currency, defaultRatePerKg, paymentMethods, loyaltyEnabled, taxEnabled, taxRate } = await req.json();
     const { data: existingRows, error: lookupError } = await supabase()
       .from('settings')
       .select('id')
@@ -60,7 +58,6 @@ export async function PUT(req: NextRequest) {
           currency,
           default_rate_per_kg: defaultRatePerKg,
           payment_methods: paymentMethods,
-          routes: routes ?? [],
           loyalty_enabled: loyaltyEnabled,
           tax_enabled: taxEnabled,
           tax_rate: taxRate,
@@ -81,7 +78,6 @@ export async function PUT(req: NextRequest) {
           currency,
           default_rate_per_kg: defaultRatePerKg,
           payment_methods: paymentMethods,
-          routes: routes ?? [],
           loyalty_enabled: loyaltyEnabled,
           tax_enabled: taxEnabled,
           tax_rate: taxRate
@@ -93,7 +89,7 @@ export async function PUT(req: NextRequest) {
 
     if (error) throw error;
     logAudit(req, existing ? 'settings_updated' : 'settings_created', { companyName });
-    return NextResponse.json({ ...data, paymentMethods: data.payment_methods, routes: data.routes });
+    return NextResponse.json({ ...data, paymentMethods: data.payment_methods });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -19,7 +19,7 @@ async function getCurrentStaff() {
     {
       cookies: {
         getAll() { return cookieStore.getAll(); },
-        setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
+        setAll(cookiesToSet: { name: string; value: string; options: any }[]) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); },
       },
     }
   );
@@ -74,6 +74,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (isAdminChange) {
       const adminError = await requireAdmin();
       if (adminError) return adminError;
+      const requester = await getCurrentStaff();
+      // A staff member can never block (deactivate) their own account.
+      if (body.active === false && requester && requester.id === id) {
+        return NextResponse.json({ error: 'You cannot block your own account.' }, { status: 403 });
+      }
       if (body.active !== undefined) updateData.active = body.active;
       if (body.role !== undefined) updateData.role = body.role;
     }

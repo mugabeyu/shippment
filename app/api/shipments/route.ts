@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase()
       .from('shipments')
-      .select('*, customer:customers(*)')
+      .select('*, customer:customers(*), shipment_line_items(*)')
       .order('date', { ascending: false });
 
     if (status) query = query.eq('status', status);
@@ -33,31 +33,40 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      customerId, origin, destination, category, weightKg, quantity, description, status,
-      date, paymentStatus, paymentMethod, trackingNumber, pickupDate, expectedArrival,
-      insurance, specialInstructions, internalNotes, photos
+      customerId,
+      routeDirection,
+      description,
+      status,
+      date,
+      paymentStatus,
+      paymentMethod,
+      trackingNumber,
+      pickupDate,
+      expectedArrival,
+      insurance,
+      specialInstructions,
+      internalNotes,
+      photos,
+      lineItems
     } = body;
 
     const tracking = trackingNumber || `TRK-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    let basePrice = 0;
-    const { data: categoryRow } = await supabase()
-      .from('categories')
-      .select('price_per_kg')
-      .eq('name', category)
-      .single();
-
-    if (categoryRow?.price_per_kg) {
-      basePrice = Number(categoryRow.price_per_kg) * (weightKg || 0) * (quantity || 1);
-    } else {
-      const { data: settingsRow } = await supabase()
-        .from('settings')
-        .select('default_rate_per_kg')
-        .single();
-      const defaultRate = settingsRow?.default_rate_per_kg || 0;
-      basePrice = defaultRate * (weightKg || 0) * (quantity || 1);
+    // Validate line items
+    if (!lineItems || !Array.isArray(lineItems) || lineItems.length === 0) {
+      return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
     }
 
+    // Compute pricing from line items
+    let basePrice = 0;
+    for (const li of lineItems) {
+      const unitPrice = Number(li.unitPrice) || 0;
+      const qty = Math.max(1, Number(li.quantity) || 1);
+      const wkg = Math.max(1, Number(li.weightKg) || 1);
+      basePrice += unitPrice * qty * wkg;
+    }
+
+    // Discount logic
     let discountAmount = 0;
     const { data: activeOffer } = await supabase()
       .from('offers')
@@ -73,9 +82,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const totalWeight = (weightKg || 0) * (quantity || 1);
+    // Total weight from all line items
+    const totalWeight = lineItems.reduce((sum: number, li: any) => {
+      return sum + (Number(li.weightKg) || 1) * (Number(li.quantity) || 1);
+    }, 0);
 
-    // Cumulative loyalty: grant reward when customer's lifetime kg crosses a target milestone
+    // Cumulative loyalty
     if (activeOffer && Number(activeOffer.target_kg) > 0 && Number(activeOffer.reward_kg) > 0 && customerId) {
       const { data: customerData } = await supabase()
         .from('customers')
@@ -87,20 +99,22 @@ export async function POST(req: NextRequest) {
       const newKg = prevKg + totalWeight;
       const target = Number(activeOffer.target_kg);
       const reward = Number(activeOffer.reward_kg);
-
       const milestonesBefore = Math.floor(prevKg / target);
       const milestonesAfter = Math.floor(newKg / target);
       const earned = Math.max(0, milestonesAfter - milestonesBefore);
-      const milestonesEarned = Math.min(1, earned);
 
-      if (milestonesEarned > 0) {
-        const pricePerKg = Math.round(basePrice / Math.max(1, totalWeight));
-        discountAmount += Math.round(reward * pricePerKg);
+      if (earned > 0) {
+        const avgPricePerKg = Math.round(basePrice / Math.max(1, totalWeight));
+        discountAmount += Math.round(reward * earned * avgPricePerKg);
       }
     }
 
     const finalAmount = Math.max(0, basePrice - discountAmount);
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
+    const origin = routeDirection === 'retour' ? 'Madagascar' : 'Mauritius';
+    const destination = routeDirection === 'retour' ? 'Mauritius' : 'Madagascar';
+    // Derive category from first line item for backward compat
+    const category = lineItems[0]?.categoryName || lineItems[0]?.itemName || '';
 
     const { data: shipment, error: shipmentError } = await supabase()
       .from('shipments')
@@ -110,8 +124,8 @@ export async function POST(req: NextRequest) {
         origin,
         destination,
         category,
-        weight_kg: weightKg,
-        quantity,
+        weight_kg: totalWeight,
+        quantity: lineItems.length,
         description,
         status: status || 'Pending',
         date: date || new Date().toISOString().split('T')[0],
@@ -125,37 +139,69 @@ export async function POST(req: NextRequest) {
         photos: normalizedPhotos,
         base_price: basePrice,
         discount_amount: discountAmount,
-        final_amount: finalAmount
+        final_amount: finalAmount,
+        route_direction: routeDirection || null
       }])
-      .select('*, customer:customers(*)')
+      .select()
       .single();
 
     if (shipmentError) throw shipmentError;
 
+    // Insert line items
+    const lineItemInserts = lineItems.map((li: any) => ({
+      shipment_id: shipment.id,
+      shipping_item_id: li.shippingItemId || null,
+      item_name: li.itemName,
+      category_name: li.categoryName || null,
+      quantity: Math.max(1, Number(li.quantity) || 1),
+      weight_kg: Math.max(1, Number(li.weightKg) || 1),
+      unit_price: Number(li.unitPrice) || 0,
+      line_total: (Number(li.unitPrice) || 0) * Math.max(1, Number(li.quantity) || 1) * Math.max(1, Number(li.weightKg) || 1)
+    }));
+
+    const { error: lineError } = await supabase()
+      .from('shipment_line_items')
+      .insert(lineItemInserts);
+
+    if (lineError) {
+      // Rollback: delete the shipment we just created
+      await supabase().from('shipments').delete().eq('id', shipment.id);
+      throw lineError;
+    }
+
     logAudit(req, 'shipment_created', {
       trackingNumber: shipment.tracking_number,
       customerId,
-      origin,
-      destination,
+      routeDirection,
       status: shipment.status,
-      weightKg,
-      quantity
+      lineItems: lineItemInserts.length,
+      totalWeight
     });
 
-    const { data: customer } = await supabase()
-      .from('customers')
-      .select('total_kg_sent')
-      .eq('id', customerId)
-      .single();
-
-    if (customer) {
-      await supabase()
+    // Update customer total kg
+    if (customerId) {
+      const { data: customer } = await supabase()
         .from('customers')
-        .update({ total_kg_sent: (customer.total_kg_sent || 0) + weightKg })
-        .eq('id', customerId);
+        .select('total_kg_sent')
+        .eq('id', customerId)
+        .single();
+
+      if (customer) {
+        await supabase()
+          .from('customers')
+          .update({ total_kg_sent: (customer.total_kg_sent || 0) + totalWeight })
+          .eq('id', customerId);
+      }
     }
 
-    return NextResponse.json(mapShipment(shipment), { status: 201 });
+    // Fetch back with line items
+    const { data: created } = await supabase()
+      .from('shipments')
+      .select('*, customer:customers(*), shipment_line_items(*)')
+      .eq('id', shipment.id)
+      .single();
+
+    return NextResponse.json(mapShipment(created), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

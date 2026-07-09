@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCustomers, type Customer } from '@/lib/swr';
-import { Plus, Search, Phone, Mail, MapPin, X, Edit2, Ban, UserCheck } from 'lucide-react';
+import { Plus, Search, Phone, Mail, MapPin, X, Edit2 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 export default function Customers() {
   const router = useRouter();
-  const { customers, loading, error, addCustomer, updateCustomer, toggleCustomerActive } = useCustomers();
+  const t = useT();
+  const { customers, loading, error, addCustomer, updateCustomer } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draft, setDraft] = useState<Customer>({
@@ -58,12 +60,12 @@ export default function Customers() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-lg font-semibold text-white/90">Customers</h1>
+        <h1 className="text-lg font-semibold text-white/90">{t('Customers')}</h1>
         <button
           onClick={openNew}
           className="btn-primary">
           <Plus className="w-5 h-5 mr-2" />
-          Add Customer
+          {t('Add Customer')}
         </button>
       </div>
 
@@ -73,7 +75,7 @@ export default function Customers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/25" />
             <input
               type="text"
-              placeholder="Search by name or phone..."
+              placeholder={t('Search by name or phone...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field pl-10" />
@@ -100,28 +102,20 @@ export default function Customers() {
                       <span className={`px-2 py-0.5 text-sm font-medium rounded-full ${
                         customer.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                       }`}>
-                        {customer.active ? 'Active' : 'Blocked'}
+                        {customer.active ? t('Active') : t('Blocked')}
                       </span>
                     </div>
                     <div className="text-sm text-amber-500 font-medium mt-1">
-                      Loyalty: {customer.totalKgSent} kg sent
+                      {t('Loyalty:')} {customer.totalKgSent} {t('kg sent')}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); openEdit(customer); }}
-                    aria-label={`Edit ${customer.name}`}
+                    aria-label={`${t('Edit')} ${customer.name}`}
                     className="p-1.5 text-white/40 hover:text-white/90 transition-colors">
                     <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleCustomerActive(customer.id, !customer.active); }}
-                    aria-label={customer.active ? `Block ${customer.name}` : `Unblock ${customer.name}`}
-                    className={`p-1.5 transition-colors ${
-                      customer.active ? 'text-white/40 hover:text-red-500' : 'text-white/40 hover:text-green-500'
-                    }`}>
-                    {customer.active ? <Ban className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -143,7 +137,7 @@ export default function Customers() {
 
               {customer.notes &&
                 <div className="mt-4 pt-4 border-t border-white/[0.06] text-sm text-white/40">
-                  <span className="font-medium text-white/60">Notes:</span>{' '}
+                  <span className="font-medium text-white/60">{t('Notes:')}</span>{' '}
                   {customer.notes}
                 </div>
               }
@@ -153,7 +147,7 @@ export default function Customers() {
 
         {filteredCustomers.length === 0 &&
           <div className="p-8 text-center text-white/40">
-            No customers found.
+            {t('No customers found.')}
           </div>
         }
       </div>
@@ -163,7 +157,7 @@ export default function Customers() {
           <div className="bg-[#12141C] border border-white/[0.06] rounded-xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-white/[0.06]">
               <h2 className="text-lg font-semibold text-white/90">
-                {draft.id ? 'Edit Customer' : 'Add New Customer'}
+                {draft.id ? t('Edit Customer') : t('Add New Customer')}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -173,7 +167,7 @@ export default function Customers() {
             </div>
             <form onSubmit={handleAddCustomer} className="p-5 space-y-5">
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Full Name</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Full Name')}</label>
                 <input
                   required
                   type="text"
@@ -187,7 +181,7 @@ export default function Customers() {
                   className="input-field" />
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Phone Number (Loyalty ID)</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Phone Number (Loyalty ID)')}</label>
                 <input
                   required
                   type="tel"
@@ -202,7 +196,7 @@ export default function Customers() {
                   className="input-field" />
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Email Address</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Email Address')}</label>
                 <input
                   type="email"
                   value={draft.email}
@@ -214,7 +208,7 @@ export default function Customers() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Address</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Address')}</label>
                 <textarea
                   rows={2}
                   value={draft.address}
@@ -224,7 +218,7 @@ export default function Customers() {
                   className="input-field resize-none" />
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">Notes</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Notes')}</label>
                 <textarea
                   rows={2}
                   value={draft.notes}
@@ -238,12 +232,12 @@ export default function Customers() {
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">
-                  Cancel
+                  {t('Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn-primary">
-                  {draft.id ? 'Save Changes' : 'Save Customer'}
+                  {draft.id ? t('Save Changes') : t('Save Customer')}
                 </button>
               </div>
             </form>
