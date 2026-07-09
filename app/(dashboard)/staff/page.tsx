@@ -5,15 +5,16 @@ import { useStaff, type Staff } from '@/lib/swr';
 import { Search, Mail, Shield, Ban, UserCheck, UserPlus, Send } from 'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 export default function Staff() {
   const { staff, loading, updateStaff, toggleStaffActive, resendStaffInvite } = useStaff();
   const { activeStaffRole, activeStaffEmail } = useUiStore();
   const t = useT();
+  const { toast } = useToast();
   const isAdmin = activeStaffRole === 'Admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approvingRole, setApprovingRole] = useState<'Admin' | 'Staff'>('Staff');
 
@@ -21,11 +22,10 @@ export default function Staff() {
     setSending(true);
     try {
       const updated = await updateStaff(id, { active: true, role: approvingRole });
-      setMessage({ type: 'success', text: `${updated.name || updated.email} ${t('has been approved as')} ${approvingRole}.` });
-      setTimeout(() => setMessage(null), 3000);
+      toast('success', `${updated.name || updated.email} ${t('has been approved as')} ${approvingRole}.`);
       setApprovingId(null);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || t('Failed to approve staff') });
+      toast('error', err.message || t('Failed to approve staff'));
     } finally {
       setSending(false);
     }
@@ -35,10 +35,9 @@ export default function Staff() {
     setSending(true);
     try {
       const updated = await toggleStaffActive(id, !currentActive);
-      setMessage({ type: 'success', text: `${updated.name || updated.email} ${!currentActive ? t('has been unblocked.') : t('has been blocked.')}` });
-      setTimeout(() => setMessage(null), 3000);
+      toast('success', `${updated.name || updated.email} ${!currentActive ? t('has been unblocked.') : t('has been blocked.')}`);
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || t('Failed to update staff status') });
+      toast('error', err.message || t('Failed to update staff status'));
     } finally {
       setSending(false);
     }
@@ -48,10 +47,9 @@ export default function Staff() {
     setSending(true);
     try {
       await resendStaffInvite(id);
-      setMessage({ type: 'success', text: t('Invitation resent.') });
-      setTimeout(() => setMessage(null), 3000);
+      toast('success', t('Invitation resent.'));
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || t('Failed to resend invitation') });
+      toast('error', err.message || t('Failed to resend invitation'));
     } finally {
       setSending(false);
     }
@@ -69,12 +67,6 @@ export default function Staff() {
 
   return (
     <div className="space-y-5">
-      {message && (
-        <div className={`rounded-lg p-4 ${message.type === 'success' ? 'bg-green-100 border border-green-200 text-green-700' : 'bg-red-500/10 border border-red-500/30 text-red-600'}`}>
-          {message.text}
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-semibold text-white/90">{t('Staff Management')}</h1>

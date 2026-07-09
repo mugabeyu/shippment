@@ -3,6 +3,8 @@ export default {
   darkMode: 'class',
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}'
   ],
   theme: {
@@ -50,7 +52,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif']
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif']
       },
       animation: {
         'fade-in': 'fadeIn 0.8s ease-out forwards',
@@ -59,7 +61,8 @@ export default {
         'float': 'float 6s ease-in-out infinite',
         'float-delayed': 'float 6s ease-in-out 3s infinite',
         'route-dash': 'routeDash 4s linear infinite',
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fly-across': 'flyAcross linear infinite'
       },
       keyframes: {
         fadeIn: {
@@ -81,6 +84,12 @@ export default {
         routeDash: {
           '0%': { strokeDashoffset: '1000' },
           '100%': { strokeDashoffset: '0' }
+        },
+        flyAcross: {
+          '0%': { transform: 'translate(-10vw, 0) rotate(35deg)', opacity: '0' },
+          '8%': { opacity: '1' },
+          '92%': { opacity: '1' },
+          '100%': { transform: 'translate(70vw, -18vh) rotate(35deg)', opacity: '0' }
         }
       },
       backgroundImage: {

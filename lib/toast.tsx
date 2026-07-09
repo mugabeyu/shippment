@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { CheckCircle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, X, Plane } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -41,29 +41,39 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const iconMap: Record<ToastType, React.ReactNode> = {
-    success: <CheckCircle className="w-5 h-5 text-emerald-400" />,
-    error: <XCircle className="w-5 h-5 text-red-400" />,
-    info: <Info className="w-5 h-5 text-blue-400" />,
+    success: <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />,
+    error: <XCircle className="w-6 h-6 text-red-400 shrink-0" />,
+    info: <Info className="w-6 h-6 text-blue-400 shrink-0" />,
   };
 
-  const borderMap: Record<ToastType, string> = {
-    success: 'border-emerald-500/30',
-    error: 'border-red-500/30',
-    info: 'border-blue-500/30',
+  const styleMap: Record<ToastType, string> = {
+    success: 'border-emerald-500/40 shadow-emerald-500/20',
+    error: 'border-red-500/40 shadow-red-500/20',
+    info: 'border-blue-500/40 shadow-blue-500/20',
+  };
+
+  const glowMap: Record<ToastType, string> = {
+    success: 'from-emerald-500/15 via-transparent to-transparent',
+    error: 'from-red-500/15 via-transparent to-transparent',
+    info: 'from-blue-500/15 via-transparent to-transparent',
   };
 
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl bg-[#12141C]/95 backdrop-blur-xl border shadow-2xl animate-bounceIn min-w-[280px] max-w-[420px] ${borderMap[t.type]}`}
+            className={`pointer-events-auto relative overflow-hidden flex items-center gap-3 px-5 py-4 rounded-2xl bg-[#12141C]/95 backdrop-blur-xl border shadow-2xl animate-toast-pop min-w-[290px] max-w-[420px] ${styleMap[t.type]}`}
           >
+            <div className={`absolute inset-0 bg-gradient-to-br ${glowMap[t.type]} pointer-events-none`} />
+            {t.type === 'success' && (
+              <Plane className="absolute w-5 h-5 text-emerald-300/70 animate-toast-plane pointer-events-none" style={{ top: '14px' }} aria-hidden="true" />
+            )}
             {iconMap[t.type]}
-            <span className="text-sm text-white/90 flex-1">{t.message}</span>
-            <button onClick={() => dismiss(t.id)} className="text-white/30 hover:text-white/60 transition-colors shrink-0">
+            <span className="relative text-sm text-white/90 flex-1 font-medium">{t.message}</span>
+            <button onClick={() => dismiss(t.id)} className="relative text-white/30 hover:text-white/70 hover:scale-125 transition-all duration-200 shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>

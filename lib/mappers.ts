@@ -14,6 +14,7 @@ export function mapShipment(row: any) {
 
   return {
     id: row.id,
+    idNo: row.id_no,
     trackingNumber: row.tracking_number,
     customerId: row.customer_id,
     origin: row.origin || 'Mauritius',

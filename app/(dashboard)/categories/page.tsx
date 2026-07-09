@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useCategories, useShippingItems, useSettings, type Category, type ShippingItem } from '@/lib/swr';
 import { Plus, Edit2, Trash2, X, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 const EMPTY_CAT: Category = {
   id: '',
@@ -15,8 +16,9 @@ const EMPTY_CAT: Category = {
 
 export default function Categories() {
   const t = useT();
+  const { toast } = useToast();
   const { categories, loading, error, addCategory, updateCategory, deleteCategory } = useCategories();
-  const { shippingItems, addItem, deleteItem } = useShippingItems();
+  const { shippingItems, addItem, updateItem, deleteItem } = useShippingItems();
   const { settings } = useSettings();
   const currency = settings?.currency || 'MGA';
 
@@ -26,6 +28,9 @@ export default function Categories() {
   const [itemModalCategoryId, setItemModalCategoryId] = useState<string>('');
   const [newItem, setNewItem] = useState({ item: '', allerPrice: '', retourPrice: '' });
   const [itemModalOpen, setItemModalOpen] = useState(false);
+
+  const [editItemModalOpen, setEditItemModalOpen] = useState(false);
+  const [editItemDraft, setEditItemDraft] = useState<ShippingItem | null>(null);
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
@@ -53,12 +58,18 @@ export default function Categories() {
   const openEditCat = (c: Category) => { setCatDraft(c); setCatModal(true); };
   const handleCatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (catDraft.id) {
-      await updateCategory(catDraft.id, catDraft);
-    } else {
-      await addCategory({ name: catDraft.name, description: catDraft.description, handlingNotes: catDraft.handlingNotes, pricePerKg: 0 });
+    try {
+      if (catDraft.id) {
+        await updateCategory(catDraft.id, catDraft);
+        toast('success', `${catDraft.name} updated`);
+      } else {
+        await addCategory({ name: catDraft.name, description: catDraft.description, handlingNotes: catDraft.handlingNotes, pricePerKg: 0 });
+        toast('success', `${catDraft.name} created`);
+      }
+      setCatModal(false);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save category');
     }
-    setCatModal(false);
   };
 
   // --- Item CRUD ---
@@ -70,15 +81,47 @@ export default function Categories() {
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.item.trim() || !newItem.allerPrice) return;
-    await addItem({
-      categoryId: itemModalCategoryId,
-      item: newItem.item.trim(),
-      allerPrice: Number(newItem.allerPrice),
-      retourPrice: newItem.retourPrice ? Number(newItem.retourPrice) : null
-    });
-    setItemModalOpen(false);
+    try {
+      await addItem({
+        categoryId: itemModalCategoryId,
+        item: newItem.item.trim(),
+        allerPrice: Number(newItem.allerPrice),
+        retourPrice: newItem.retourPrice ? Number(newItem.retourPrice) : null
+      });
+      toast('success', `${newItem.item.trim()} added`);
+      setItemModalOpen(false);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to add item');
+    }
   };
-  const handleDeleteItem = async (id: string) => { await deleteItem(id); };
+  const handleDeleteItem = async (id: string, itemName?: string) => {
+    try {
+      await deleteItem(id);
+      toast('success', `${itemName || 'Item'} deleted`);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to delete item');
+    }
+  };
+
+  const openEditItem = (item: ShippingItem) => {
+    setEditItemDraft(item);
+    setEditItemModalOpen(true);
+  };
+  const handleEditItemSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItemDraft) return;
+    try {
+      await updateItem(editItemDraft.id, {
+        allerPrice: editItemDraft.allerPrice,
+        retourPrice: editItemDraft.retourPrice
+      });
+      toast('success', `${editItemDraft.item} price updated`);
+      setEditItemModalOpen(false);
+      setEditItemDraft(null);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to update price');
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-white/40">Loading categories...</div>;
@@ -144,19 +187,24 @@ export default function Categories() {
                       <p className="text-sm text-white/30 text-center py-4">{t('No items in this category yet. Click "Add Item" to add one.')}</p>
                     ) : (
                       items.map((it) => (
-                        <div key={it.id} className="flex items-center justify-between p-3 bg-[#1A1C24] border border-white/[0.06] rounded-lg">
+                        <div key={it.id} className="flex items-center justify-between p-3 bg-[#1A1C24] border border-white/[0.06] rounded-lg hover:border-white/[0.12] transition-colors">
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-white/90 block truncate">{it.item}</span>
                             <div className="flex gap-3 mt-1 text-xs">
                               <span className="text-emerald-400">{t('Aller')}: {it.allerPrice.toLocaleString()} {currency}</span>
                               <span className="text-amber-400">
-                                {t('Retour')}: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} {currency}` : '—'}
+                                {t('Retour')}: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} ${currency}` : '—'}
                               </span>
                             </div>
                           </div>
-                          <button onClick={() => handleDeleteItem(it.id)} aria-label="Delete item" className="p-1.5 text-white/40 hover:text-red-500 transition-colors ml-2 shrink-0">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1 ml-2 shrink-0">
+                            <button onClick={() => openEditItem(it)} aria-label="Edit price" title={t('Edit Price')} className="p-1.5 text-white/40 hover:text-cyan-400 hover:scale-125 transition-all duration-200">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteItem(it.id, it.item)} aria-label="Delete item" className="p-1.5 text-white/40 hover:text-red-500 hover:scale-125 transition-all duration-200">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}
@@ -217,6 +265,38 @@ export default function Categories() {
             <div className="pt-4 flex justify-end space-x-3">
               <button type="button" onClick={() => setItemModalOpen(false)} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">{t('Cancel')}</button>
               <button type="submit" className="btn-primary"><Plus className="w-4 h-4 mr-1" /> {t('Add Item')}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Edit Item Price Modal */}
+      {editItemModalOpen && editItemDraft && (
+        <Modal onClose={() => { setEditItemModalOpen(false); setEditItemDraft(null); }} title={t('Edit Item Price')}>
+          <form onSubmit={handleEditItemSubmit} className="p-5 space-y-5">
+            <div>
+              <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Item Name')}</label>
+              <div className="flex items-center px-4 py-2.5 bg-[#1E1E2E] border border-white/[0.08] rounded-xl text-white/90">
+                {editItemDraft.item}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}</label>
+                <input required type="number" min="0" value={editItemDraft.allerPrice}
+                  onChange={(e) => setEditItemDraft({ ...editItemDraft, allerPrice: Number(e.target.value) })} className="input-field" />
+                <p className="text-xs text-white/30 mt-1">{t('Madagascar → Mauritius')}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}</label>
+                <input type="number" min="0" value={editItemDraft.retourPrice ?? ''}
+                  onChange={(e) => setEditItemDraft({ ...editItemDraft, retourPrice: e.target.value ? Number(e.target.value) : null })} className="input-field" placeholder={t('Leave empty if N/A')} />
+                <p className="text-xs text-white/30 mt-1">{t('Mauritius → Madagascar')}</p>
+              </div>
+            </div>
+            <div className="pt-4 flex justify-end space-x-3">
+              <button type="button" onClick={() => { setEditItemModalOpen(false); setEditItemDraft(null); }} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">{t('Cancel')}</button>
+              <button type="submit" className="btn-primary">{t('Save Changes')}</button>
             </div>
           </form>
         </Modal>

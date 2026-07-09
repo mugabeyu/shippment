@@ -15,10 +15,15 @@ function touchSession() {
   localStorage.setItem(SESSION_TIMEOUT_KEY, String(Date.now()));
 }
 
+// mousemove/scroll can fire hundreds of times per second; only re-touch the
+// session (localStorage write + timer reset) this often instead of on every event.
+const ACTIVITY_THROTTLE_MS = 15000;
+
 export function useSessionTimeout(onTimeout?: () => void) {
   const warnedRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
   const warningRef = useRef<number | null>(null);
+  const lastActivityRef = useRef(0);
 
   const reset = useCallback(() => {
     warnedRef.current = false;
@@ -56,23 +61,24 @@ export function useSessionTimeout(onTimeout?: () => void) {
 
     scheduleNext();
 
-    const events: Array<{ event: string; handler: () => void }> = [
-      { event: 'mousemove', handler: () => { touchSession(); scheduleNext(); } },
-      { event: 'keydown', handler: () => { touchSession(); scheduleNext(); } },
-      { event: 'click', handler: () => { touchSession(); scheduleNext(); } },
-      { event: 'scroll', handler: () => { touchSession(); scheduleNext(); } },
-      { event: 'touchstart', handler: () => { touchSession(); scheduleNext(); } }
-    ];
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - lastActivityRef.current < ACTIVITY_THROTTLE_MS) return;
+      lastActivityRef.current = now;
+      touchSession();
+      scheduleNext();
+    };
 
-    events.forEach(({ event, handler }) => {
-      window.addEventListener(event, handler, { passive: true });
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach((event) => {
+      window.addEventListener(event, onActivity, { passive: true });
     });
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (warningRef.current) clearTimeout(warningRef.current);
-      events.forEach(({ event, handler }) => {
-        window.removeEventListener(event, handler);
+      events.forEach((event) => {
+        window.removeEventListener(event, onActivity);
       });
     };
   }, [onTimeout, reset]);

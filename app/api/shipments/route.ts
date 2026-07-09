@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
       date,
       paymentStatus,
       paymentMethod,
-      trackingNumber,
       pickupDate,
       expectedArrival,
       insurance,
@@ -50,12 +49,22 @@ export async function POST(req: NextRequest) {
       lineItems
     } = body;
 
-    const tracking = trackingNumber || `TRK-${Math.floor(1000 + Math.random() * 9000)}`;
-
     // Validate line items
     if (!lineItems || !Array.isArray(lineItems) || lineItems.length === 0) {
       return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
     }
+
+    // None of these three depend on each other, so fetch/assign them concurrently
+    // instead of one round trip at a time.
+    const [trackingResult, offerResult, customerResult] = await Promise.all([
+      supabase().rpc('next_tracking_number', { p_direction: routeDirection === 'retour' ? 'retour' : 'aller' }),
+      supabase().from('offers').select('discount_percent, discount_amount, target_kg, reward_kg').eq('active', true).maybeSingle(),
+      customerId ? supabase().from('customers').select('*').eq('id', customerId).single() : Promise.resolve({ data: null, error: null })
+    ]);
+    if (trackingResult.error) throw trackingResult.error;
+    const tracking = trackingResult.data;
+    const activeOffer = offerResult.data;
+    const customer = customerResult.data as Record<string, any> | null;
 
     // Compute pricing from line items
     let basePrice = 0;
@@ -68,12 +77,6 @@ export async function POST(req: NextRequest) {
 
     // Discount logic
     let discountAmount = 0;
-    const { data: activeOffer } = await supabase()
-      .from('offers')
-      .select('discount_percent, discount_amount, target_kg, reward_kg')
-      .eq('active', true)
-      .maybeSingle();
-
     if (activeOffer) {
       if (Number(activeOffer.discount_percent) > 0) {
         discountAmount = Math.round(basePrice * (Number(activeOffer.discount_percent) / 100));
@@ -87,16 +90,11 @@ export async function POST(req: NextRequest) {
       return sum + (Number(li.weightKg) || 1) * (Number(li.quantity) || 1);
     }, 0);
 
+    const prevKg = customer?.total_kg_sent || 0;
+    const newKg = prevKg + totalWeight;
+
     // Cumulative loyalty
     if (activeOffer && Number(activeOffer.target_kg) > 0 && Number(activeOffer.reward_kg) > 0 && customerId) {
-      const { data: customerData } = await supabase()
-        .from('customers')
-        .select('total_kg_sent')
-        .eq('id', customerId)
-        .single();
-
-      const prevKg = customerData?.total_kg_sent || 0;
-      const newKg = prevKg + totalWeight;
       const target = Number(activeOffer.target_kg);
       const reward = Number(activeOffer.reward_kg);
       const milestonesBefore = Math.floor(prevKg / target);
@@ -159,9 +157,10 @@ export async function POST(req: NextRequest) {
       line_total: (Number(li.unitPrice) || 0) * Math.max(1, Number(li.quantity) || 1) * Math.max(1, Number(li.weightKg) || 1)
     }));
 
-    const { error: lineError } = await supabase()
+    const { data: insertedLineItems, error: lineError } = await supabase()
       .from('shipment_line_items')
-      .insert(lineItemInserts);
+      .insert(lineItemInserts)
+      .select();
 
     if (lineError) {
       // Rollback: delete the shipment we just created
@@ -178,28 +177,20 @@ export async function POST(req: NextRequest) {
       totalWeight
     });
 
-    // Update customer total kg
-    if (customerId) {
-      const { data: customer } = await supabase()
-        .from('customers')
-        .select('total_kg_sent')
-        .eq('id', customerId)
-        .single();
-
-      if (customer) {
-        await supabase()
-          .from('customers')
-          .update({ total_kg_sent: (customer.total_kg_sent || 0) + totalWeight })
-          .eq('id', customerId);
-      }
+    // We already have the customer's prior total_kg_sent (fetched up front) and the
+    // computed new total, so just write it — no need to re-read it first.
+    if (customerId && customer) {
+      await supabase().from('customers').update({ total_kg_sent: newKg }).eq('id', customerId);
     }
 
-    // Fetch back with line items
-    const { data: created } = await supabase()
-      .from('shipments')
-      .select('*, customer:customers(*), shipment_line_items(*)')
-      .eq('id', shipment.id)
-      .single();
+    // Build the response from data we already have in hand (the insert above already
+    // returned the full shipment row, and the line-items insert returns its rows too)
+    // instead of a fourth round trip to re-fetch what we just wrote.
+    const created = {
+      ...shipment,
+      customer: customer ? { ...customer, total_kg_sent: newKg } : null,
+      shipment_line_items: insertedLineItems || []
+    };
 
     return NextResponse.json(mapShipment(created), { status: 201 });
   } catch (error: any) {

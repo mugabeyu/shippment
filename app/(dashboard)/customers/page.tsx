@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useCustomers, type Customer } from '@/lib/swr';
 import { Plus, Search, Phone, Mail, MapPin, X, Edit2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 export default function Customers() {
   const router = useRouter();
   const t = useT();
+  const { toast } = useToast();
   const { customers, loading, error, addCustomer, updateCustomer } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,13 +36,19 @@ export default function Customers() {
   };
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (draft.id) {
-      await updateCustomer(draft.id, draft);
-    } else {
-      const { active, ...createData } = draft;
-      await addCustomer({ ...createData, totalKgSent: 0, photo: '' });
+    try {
+      if (draft.id) {
+        await updateCustomer(draft.id, draft);
+        toast('success', `${draft.name} updated`);
+      } else {
+        const { active, ...createData } = draft;
+        await addCustomer({ ...createData, totalKgSent: 0, photo: '' });
+        toast('success', `${draft.name} added`);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save customer');
     }
-    setIsModalOpen(false);
   };
   const filteredCustomers = customers.filter(
     (c) =>

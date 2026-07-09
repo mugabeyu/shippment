@@ -56,27 +56,35 @@ export default function Expenses() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      date: draft.date,
-      category: draft.category,
-      amount: draft.amount,
-      note: draft.note,
-      attachmentUrl: draft.attachmentUrl || null
-    };
-    if (draft.id) {
-      await updateExpense(draft.id, payload);
-      toast('success', 'Expense updated successfully');
-    } else {
-      await addExpense(payload);
-      toast('success', 'Expense added successfully');
+    try {
+      const payload = {
+        date: draft.date,
+        category: draft.category,
+        amount: draft.amount,
+        note: draft.note,
+        attachmentUrl: draft.attachmentUrl || null
+      };
+      if (draft.id) {
+        await updateExpense(draft.id, payload);
+        toast('success', 'Expense updated successfully');
+      } else {
+        await addExpense(payload);
+        toast('success', 'Expense added successfully');
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save expense');
     }
-    setIsModalOpen(false);
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this expense?')) {
-      await deleteExpense(id);
-      toast('info', 'Expense deleted');
+      try {
+        await deleteExpense(id);
+        toast('success', 'Expense deleted');
+      } catch (err: any) {
+        toast('error', err?.message || 'Failed to delete expense');
+      }
     }
   };
 

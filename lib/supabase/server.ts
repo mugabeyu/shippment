@@ -16,6 +16,13 @@ function makeClient(key: string) {
   });
 }
 
+// Route handlers call getServiceSupabase()/getAdminSupabase() repeatedly within a
+// single request (and across warm invocations of the same server process) — each
+// createClient() call sets up its own internal auth/postgrest/realtime wiring, so
+// reusing one instance per key avoids paying that cost on every single query.
+let cachedServiceClient: ReturnType<typeof makeClient> | null = null;
+let cachedAdminClient: ReturnType<typeof makeClient> | null = null;
+
 /**
  * Server-side Supabase client for API route handlers.
  * Uses the service-role key when configured (bypasses RLS, required for writes
@@ -23,11 +30,11 @@ function makeClient(key: string) {
  * work before the service-role key is set.
  */
 export function getServiceSupabase() {
-  if (!hasServiceKey) {
+  if (!cachedServiceClient) {
     // Public-read endpoints work with the anon key; writes will be blocked by RLS.
-    return makeClient(anonKey);
+    cachedServiceClient = makeClient(hasServiceKey ? serviceKey : anonKey);
   }
-  return makeClient(serviceKey);
+  return cachedServiceClient;
 }
 
 /** Service-role client with admin privileges (auth.admin operations). */
@@ -38,5 +45,8 @@ export function getAdminSupabase() {
         'Set it in .env.local (server-only, never exposed to the client).'
     );
   }
-  return makeClient(hasServiceKey ? serviceKey : anonKey);
+  if (!cachedAdminClient) {
+    cachedAdminClient = makeClient(hasServiceKey ? serviceKey : anonKey);
+  }
+  return cachedAdminClient;
 }

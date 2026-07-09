@@ -18,12 +18,14 @@ import {
   ClipboardList,
   Mail,
   Download,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { generateReceiptPDF, generateReceiptBlob, whatsappReceiptText } from '@/lib/exports';
 import ReceiptContent from '@/components/ReceiptContent';
 import { useToast } from '@/lib/toast';
 import { useT } from '@/lib/i18n';
+import { formatLineItemQty } from '@/lib/lineItems';
 
 const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   Package, ClipboardList, Truck, MapPin, CheckCircle, XCircle
@@ -39,7 +41,7 @@ export default function ShipmentDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
-  const { shipments, loading: shipmentsLoading, updateShipmentStatus } = useShipments();
+  const { shipments, loading: shipmentsLoading, updateShipmentStatus, deleteShipment } = useShipments();
   const { customers } = useCustomers();
   const { settings, loading: settingsLoading } = useSettings();
   const { shippingItems } = useShippingItems();
@@ -59,6 +61,8 @@ export default function ShipmentDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [showReceipt, setShowReceipt] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isLoading = shipmentsLoading || settingsLoading;
 
@@ -91,6 +95,9 @@ export default function ShipmentDetail() {
         message: `Shipment ${shipment.trackingNumber} has been marked as ${newStatus}.`,
         staffId: localStorage.getItem('activeStaffEmail') || undefined
       });
+      toast('success', `${shipment.trackingNumber} → ${newStatus}`);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to update status');
     } finally {
       setIsUpdating(false);
     }
@@ -99,6 +106,19 @@ export default function ShipmentDetail() {
   const handlePDF = async () => {
     const el = document.getElementById('receipt-root');
     if (el) await generateReceiptPDF(el, shipment.trackingNumber);
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteShipment(shipment.id);
+      toast('success', `${shipment.trackingNumber} deleted`);
+      router.push('/shipments');
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to delete shipment');
+      setIsDeleting(false);
+      setConfirmDelete(false);
+    }
   };
 
   const handleShareReceipt = async () => {
@@ -148,7 +168,10 @@ export default function ShipmentDetail() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white/90">{shipment.trackingNumber}</h1>
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-sm border border-primary/20">#{shipment.idNo}</span>
+            <h1 className="text-xl font-bold text-white/90">{shipment.trackingNumber}</h1>
+          </div>
           <p className="text-sm text-white/40 mt-0.5">{t('Shipment details and status tracking')}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -230,7 +253,7 @@ export default function ShipmentDetail() {
                 <div className="bg-[#1A1C24] border border-white/[0.06] rounded-xl p-3 space-y-2">
                   {lineItems.length > 0 ? lineItems.map((li: any, idx: number) => (
                     <div key={li.id || idx} className="flex justify-between text-sm text-white/80">
-                      <span>{li.itemName} — {li.weightKg} kg({li.quantity})</span>
+                      <span>{li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}</span>
                       <span className="text-white/50">{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
                     </div>
                   )) : (
@@ -295,7 +318,7 @@ export default function ShipmentDetail() {
                     <span>{customer.email}</span>
                   </div>
                 )}
-                  <button onClick={() => router.push(`/customers/${customer.id}`)} className="w-full mt-2 px-4 py-2 text-sm font-medium text-primary border border-primary/20 rounded-xl hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02]">
+                  <button onClick={() => router.push(`/customer/${customer.id}`)} className="w-full mt-2 px-4 py-2 text-sm font-medium text-primary border border-primary/20 rounded-xl hover:bg-primary/5 hover:text-primary-400 transition-all duration-200 hover:scale-[1.02]">
                     {t('View Full Profile')}
                   </button>
               </div>
@@ -344,6 +367,31 @@ export default function ShipmentDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="card p-6 border-red-500/20">
+        <h3 className="text-base font-semibold text-red-400 mb-1">{t('Danger Zone')}</h3>
+        <p className="text-sm text-white/40 mb-4">{t('Deleting a shipment permanently removes it and cannot be undone.')}</p>
+        {confirmDelete ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-white/70">{t('Are you sure? This cannot be undone.')}</span>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-500 hover:to-red-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-red-500/30 disabled:opacity-50 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" /> {isDeleting ? t('Deleting...') : t('Yes, Delete')}
+            </button>
+            <button onClick={() => setConfirmDelete(false)} disabled={isDeleting} className="px-4 py-2.5 text-sm text-white/40 hover:text-white transition-colors rounded-xl">
+              {t('Cancel')}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="px-4 py-2.5 text-sm font-bold border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 hover:scale-[1.02] transition-all duration-200 flex items-center gap-2">
+            <Trash2 className="w-4 h-4" /> {t('Delete Shipment')}
+          </button>
+        )}
       </div>
 
       {showReceipt && shipment && (() => {

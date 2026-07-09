@@ -44,6 +44,7 @@ export interface ShipmentLineItem {
 export interface Shipment {
   ratePerKg: number;
   id: string;
+  idNo: number;
   trackingNumber: string;
   customerId: string;
   origin: string;

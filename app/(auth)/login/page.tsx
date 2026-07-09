@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Ship, Mail, Lock, Eye, EyeOff, CheckCircle2, Globe, Shield, BarChart3, User, Phone } from 'lucide-react';
+import { Ship, Mail, Lock, Eye, EyeOff, CheckCircle2, Globe, Shield, BarChart3, User, Phone, Plane } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAppConfig } from '@/lib/swr';
 
@@ -270,6 +270,14 @@ export default function Login() {
             </circle>
           </g>
         </svg>
+
+        {/* Flying airplanes — purely decorative, sit above the route map and below the copy */}
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden" aria-hidden="true">
+          <Plane className="absolute w-20 h-20 text-blue-300/80 drop-shadow-[0_0_18px_rgba(96,165,250,0.6)] animate-fly-across" style={{ top: '16%', left: '0%', animationDuration: '17s', animationDelay: '0s' }} />
+          <Plane className="absolute w-14 h-14 text-white/60 drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] animate-fly-across" style={{ top: '62%', left: '8%', animationDuration: '23s', animationDelay: '6s' }} />
+          <Plane className="absolute w-9 h-9 text-blue-200/50 animate-fly-across" style={{ top: '40%', left: '-5%', animationDuration: '19s', animationDelay: '12s' }} />
+          <Plane className="absolute w-6 h-6 text-white/35 animate-fly-across" style={{ top: '50%', left: '2%', animationDuration: '26s', animationDelay: '3s' }} />
+        </div>
 
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-16 h-full">
           <div className="flex items-center space-x-3 opacity-0 animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>

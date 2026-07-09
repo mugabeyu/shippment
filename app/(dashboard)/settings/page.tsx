@@ -4,9 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSettings, useAppConfig, type Settings as SettingsType } from '@/lib/swr';
 import { Building2, CreditCard, Save, Plus, X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 export default function Settings() {
   const t = useT();
+  const { toast } = useToast();
   const { settings, loading, error, updateSettings } = useSettings();
   const { config } = useAppConfig();
   const defaults = useMemo(() => config?.defaults || {}, [config]);
@@ -40,17 +42,22 @@ export default function Settings() {
     setDraft((d: SettingsType) => ({ ...d, [key]: value }));
 
   const handleSave = async () => {
-    await updateSettings({
-      companyName: draft.companyName,
-      contactEmail: draft.contactEmail,
-      phone: draft.phone,
-      address: draft.address,
-      currency: draft.currency,
-      defaultRatePerKg: draft.defaultRatePerKg,
-      paymentMethods: draft.paymentMethods
-    });
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    try {
+      await updateSettings({
+        companyName: draft.companyName,
+        contactEmail: draft.contactEmail,
+        phone: draft.phone,
+        address: draft.address,
+        currency: draft.currency,
+        defaultRatePerKg: draft.defaultRatePerKg,
+        paymentMethods: draft.paymentMethods
+      });
+      setSaved(true);
+      toast('success', 'Settings saved');
+      window.setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save settings');
+    }
   };
 
   const addMethod = () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useShipments, useCustomers, useCategories, useSettings, useRoutes, useOffers, useAppConfig, useShippingItems, type Shipment, type ShipmentStatus } from '@/lib/swr';
 import {
   Plus,
@@ -25,9 +26,11 @@ import { supabase } from '@/lib/supabase/client';
 import ReceiptContent from '@/components/ReceiptContent';
 import { useToast } from '@/lib/toast';
 import { useT } from '@/lib/i18n';
+import { formatLineItemQty } from '@/lib/lineItems';
 
 export default function Shipments() {
   const t = useT();
+  const router = useRouter();
   const { shipments, loading, error, addShipment, updateShipmentStatus } = useShipments();
   const { toast } = useToast();
   const { customers } = useCustomers();
@@ -212,9 +215,8 @@ export default function Shipments() {
     e.preventDefault();
     if (!customerId) return;
     if (lineItems.length === 0) return;
-    const trackingNumber = `TRK-${Math.floor(1000 + Math.random() * 9000)}`;
-    await addShipment({
-      trackingNumber,
+    // Tracking number is assigned server-side (A-01.. / R-01.. per route direction).
+    const created = await addShipment({
       customerId,
       routeDirection,
       description,
@@ -236,7 +238,7 @@ export default function Shipments() {
     if (targetDiscount > 0) {
       toast('success', `🎉 Milestone reached! ${rewardKg}kg free (-${targetDiscount.toLocaleString()} ${currency})`);
     } else {
-      toast('success', `Shipment ${trackingNumber} created`);
+      toast('success', `Shipment ${created?.trackingNumber ?? ''} created`);
     }
     setIsNewModalOpen(false);
     setCustomerSearch('');
@@ -255,21 +257,24 @@ export default function Shipments() {
 
   const filteredShipments = shipments.filter((s) => {
     const customer = customers.find((c) => c.id === s.customerId);
+    const term = searchTerm.trim().toLowerCase();
     const matchesSearch =
-      (s.trackingNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (s.trackingNumber || '').toLowerCase().includes(term) ||
+      (customer?.name || '').toLowerCase().includes(term) ||
+      String(s.idNo ?? '').includes(term) ||
+      `#${s.idNo ?? ''}`.toLowerCase().includes(term);
     const matchesStatus = statusFilter === 'All' || s.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Packed': return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
-      case 'In Transit': return 'bg-amber-500/15 text-amber-400 border border-amber-500/20';
-      case 'Delivered': return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20';
-      case 'Cancelled': return 'bg-red-500/15 text-red-400 border border-red-500/20';
+      case 'Packed': return 'bg-blue-500 text-white border border-blue-400 shadow-md shadow-blue-500/40';
+      case 'In Transit': return 'bg-amber-500 text-white border border-amber-400 shadow-md shadow-amber-500/40';
+      case 'Delivered': return 'bg-emerald-500 text-white border border-emerald-400 shadow-md shadow-emerald-500/40';
+      case 'Cancelled': return 'bg-red-500 text-white border border-red-400 shadow-md shadow-red-500/40';
       case 'Pending':
-      default: return 'bg-white/[0.04] text-white/60 border border-white/[0.08]';
+      default: return 'bg-white/15 text-white border border-white/25 shadow-md shadow-white/10';
     }
   };
 
@@ -351,7 +356,7 @@ export default function Shipments() {
         <div className="p-4 border-b border-white/[0.06] flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/25" />
-            <input type="text" placeholder={t('Search by tracking number or customer...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field pl-10" />
+            <input type="text" placeholder={t('Search by ID No, tracking number or customer...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field pl-10" />
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as 'All' | ShipmentStatus)} className="px-4 py-2.5 bg-[#12141C] border border-white/[0.06] rounded-xl text-white focus:outline-none focus:border-primary transition-colors">
             <option value="All">{t('All Statuses')}</option>
@@ -362,6 +367,7 @@ export default function Shipments() {
           <table className="w-full text-left text-sm">
             <thead className="text-sm text-white/40 uppercase bg-white/[0.03] border-b border-white/[0.06]">
               <tr>
+                <th className="px-6 py-4 font-medium">{t('ID No')}</th>
                 <th className="px-6 py-4 font-medium">{t('Tracking')}</th>
                 <th className="px-6 py-4 font-medium">{t('Customer')}</th>
                 <th className="px-6 py-4 font-medium">{t('Route')}</th>
@@ -376,7 +382,10 @@ export default function Shipments() {
                 const photosArr = (shipment as any).photos || [];
                 const lineItemsArr = shipment.lineItems || [];
                 return (
-                  <tr key={shipment.id} className="hover:bg-white/[0.03] transition-all duration-200">
+                  <tr key={shipment.id} onClick={() => router.push(`/shipment/${shipment.id}`)} className="hover:bg-white/[0.03] hover:shadow-inner cursor-pointer transition-all duration-200">
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1 rounded-lg bg-primary/10 text-primary font-bold text-sm border border-primary/20">#{shipment.idNo}</span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-white/90">{shipment.trackingNumber}</div>
                       <div className="text-sm text-white/40">{shipment.date}</div>
@@ -400,16 +409,16 @@ export default function Shipments() {
                       {lineItemsArr.length > 0 && (
                         <div className="text-xs text-white/30 mt-1">
                           {lineItemsArr.slice(0, 3).map((li: any) => (
-                            <span key={li.id || li.itemName}>{li.itemName}{lineItemsArr.indexOf(li) < Math.min(2, lineItemsArr.length - 1) ? ', ' : ''}</span>
+                            <span key={li.id || li.itemName}>{li.itemName} {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}{lineItemsArr.indexOf(li) < Math.min(2, lineItemsArr.length - 1) ? ', ' : ''}</span>
                           ))}
                           {lineItemsArr.length > 3 && <span> +{lineItemsArr.length - 3} more</span>}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-1.5">
                         <select value={shipment.status} onChange={(e) => { updateShipmentStatus(shipment.id, e.target.value as ShipmentStatus); toast('success', `${shipment.trackingNumber} → ${e.target.value}`); }} aria-label="Update status"
-                          className={`px-2.5 py-1 rounded-full text-sm font-medium border-none outline-none cursor-pointer appearance-none ${getStatusColor(shipment.status)}`}>
+                          className={`px-2.5 py-1 rounded-full text-sm font-medium border-none outline-none cursor-pointer appearance-none hover:brightness-110 transition-all duration-200 ${getStatusColor(shipment.status)}`}>
                           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
@@ -420,10 +429,10 @@ export default function Shipments() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleViewReceipt(shipment)} className="p-2 text-white/25 hover:text-primary hover:scale-110 transition-all duration-200 rounded-lg hover:bg-white/[0.04]" title="View receipt"><FileText className="w-5 h-5" /></button>
-                        <button onClick={() => handleWhatsApp(shipment)} className="p-2 text-white/25 hover:text-green-400 hover:scale-110 transition-all duration-200 rounded-lg hover:bg-white/[0.04]" title="WhatsApp"><Share2 className="w-5 h-5" /></button>
+                        <button onClick={() => handleViewReceipt(shipment)} className="p-2 text-white/25 hover:text-primary hover:scale-125 transition-all duration-200 rounded-lg hover:bg-white/[0.04]" title="View receipt"><FileText className="w-5 h-5" /></button>
+                        <button onClick={() => handleWhatsApp(shipment)} className="p-2 text-white/25 hover:text-green-400 hover:scale-125 transition-all duration-200 rounded-lg hover:bg-white/[0.04]" title="WhatsApp"><Share2 className="w-5 h-5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -534,7 +543,7 @@ export default function Shipments() {
                           <div className="flex-1 min-w-0">
                             <span className="text-white/80 font-medium">{li.itemName}</span>
                             <span className="text-white/40 ml-2">
-                              — {li.weightKg} kg({li.quantity}) {li.unitPrice.toLocaleString()} {currency}
+                              — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)} {li.unitPrice.toLocaleString()} {currency}
                               = <span className="text-emerald-400 font-semibold">{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
                             </span>
                           </div>
@@ -597,7 +606,7 @@ export default function Shipments() {
                     <div className="space-y-1.5 text-sm">
                       {lineItems.map((li) => (
                         <div key={li.key} className="flex justify-between text-white/60">
-                          <span>{li.itemName} — {li.weightKg} kg({li.quantity})</span>
+                          <span>{li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}</span>
                           <span>{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
                         </div>
                       ))}

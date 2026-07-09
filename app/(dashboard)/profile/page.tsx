@@ -7,10 +7,12 @@ import { api } from '@/lib/api';
 import { useAppConfig } from '@/lib/swr';
 import type { Staff } from '@/lib/swr';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 export default function Profile() {
   const { activeStaffEmail, setActiveStaff } = useUiStore();
   const t = useT();
+  const { toast } = useToast();
   const { config } = useAppConfig();
   const content = config?.profile_content || {};
   const [isEditing, setIsEditing] = useState(false);
@@ -50,16 +52,21 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!staff) return;
-    const updated = await api.updateStaff(staff.id, {
-      name: formData.name,
-      phone: formData.phone,
-      department: formData.department,
-      photo: formData.photo
-    });
-    setActiveStaff(formData.name, formData.email, formData.role, updated?.photo ?? formData.photo);
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      const updated = await api.updateStaff(staff.id, {
+        name: formData.name,
+        phone: formData.phone,
+        department: formData.department,
+        photo: formData.photo
+      });
+      setActiveStaff(formData.name, formData.email, formData.role, updated?.photo ?? formData.photo);
+      setIsEditing(false);
+      setSaved(true);
+      toast('success', 'Profile updated');
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to update profile');
+    }
   };
 
   if (loading) {

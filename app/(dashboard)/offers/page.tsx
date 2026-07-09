@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useOffers, useCustomers, useAppConfig, useSettings, type Offer } from '@/lib/swr';
-import { Gift, Award, Plus, Edit2, Trash2, X, Package, Truck, Percent } from 'lucide-react';
+import { Gift, Award, Edit2, X, Package, Truck, Percent, Search } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useToast } from '@/lib/toast';
 
 export default function Loyalty() {
   const t = useT();
-  const { offers, loading, error, addOffer, updateOffer, deleteOffer } = useOffers();
+  const router = useRouter();
+  const { toast } = useToast();
+  const { offers, loading, error, addOffer, updateOffer } = useOffers();
   const { customers } = useCustomers();
   const { config } = useAppConfig();
   const { settings } = useSettings();
   const currency = settings?.currency || config?.defaults?.currency || 'MGA';
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
   const [draft, setDraft] = useState<Offer>({
     id: '',
     name: '',
@@ -24,23 +29,15 @@ export default function Loyalty() {
   });
 
   const activeOffer = offers.find((o) => o.active) ?? offers[0];
+  const filteredCustomers = customers.filter((customer) => {
+    const term = customerSearch.trim().toLowerCase();
+    if (!term) return true;
+    return customer.name.toLowerCase().includes(term) || customer.phone.includes(term);
+  });
   const target = activeOffer?.targetKg ?? 25;
   const reward = activeOffer?.rewardKg ?? 2;
   const activeDiscountPercent = activeOffer?.discountPercent ?? 0;
   const activeDiscountAmount = activeOffer?.discountAmount ?? 0;
-
-  const openNew = () => {
-    setDraft({
-      id: '',
-      name: '',
-      targetKg: config?.defaults?.loyaltyTargetKg || 25,
-      rewardKg: config?.defaults?.loyaltyRewardKg || 2,
-      discountPercent: 0,
-      discountAmount: 0,
-      active: true
-    });
-    setIsModalOpen(true);
-  };
 
   const openEdit = (offer: Offer) => {
     setDraft(offer);
@@ -49,12 +46,18 @@ export default function Loyalty() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (draft.id) {
-      await updateOffer(draft.id, draft);
-    } else {
-      await addOffer({ name: draft.name, targetKg: draft.targetKg, rewardKg: draft.rewardKg, discountPercent: draft.discountPercent, discountAmount: draft.discountAmount, active: draft.active });
+    try {
+      if (draft.id) {
+        await updateOffer(draft.id, draft);
+        toast('success', `${draft.name} updated`);
+      } else {
+        await addOffer({ name: draft.name, targetKg: draft.targetKg, rewardKg: draft.rewardKg, discountPercent: draft.discountPercent, discountAmount: draft.discountAmount, active: draft.active });
+        toast('success', `${draft.name} created`);
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save offer');
     }
-    setIsModalOpen(false);
   };
 
   if (loading) {
@@ -70,9 +73,6 @@ export default function Loyalty() {
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl font-semibold text-white/90">{t('Loyalty & Offers')}</h1>
-        <button onClick={openNew} className="btn-primary">
-          <Plus className="w-5 h-5 mr-2" /> {t('New Offer')}
-        </button>
       </div>
 
       {activeOffer &&
@@ -103,7 +103,7 @@ export default function Loyalty() {
                 <Percent className="w-5 h-5 text-amber-500 mr-3" />
                 <div>
                   <div className="text-sm font-medium text-white/40 uppercase tracking-wider">{t('Discount')}</div>
-                  <div className="font-bold text-white/90">{activeDiscountPercent > 0 ? `${activeDiscountPercent}% off` : `${activeDiscountAmount.toLocaleString()} {currency} off`}</div>
+                  <div className="font-bold text-white/90">{activeDiscountPercent > 0 ? `${activeDiscountPercent}% off` : `${activeDiscountAmount.toLocaleString()} ${currency} off`}</div>
                 </div>
               </div>
             )}
@@ -133,7 +133,7 @@ export default function Loyalty() {
                 <div className="text-sm text-white/40">
                   {offer.targetKg}kg &rarr; {offer.rewardKg}kg free
                   {(offer.discountPercent > 0 || offer.discountAmount > 0) && (
-                    <span> &bull; {offer.discountPercent > 0 ? `${offer.discountPercent}% off` : `${offer.discountAmount.toLocaleString()} {currency} off`}</span>
+                    <span> &bull; {offer.discountPercent > 0 ? `${offer.discountPercent}% off` : `${offer.discountAmount.toLocaleString()} ${currency} off`}</span>
                   )}
                 </div>
               </div>
@@ -141,11 +141,8 @@ export default function Loyalty() {
                 <span className={`px-2.5 py-1 text-sm font-medium rounded-full ${offer.active ? 'bg-green-100 text-green-700' : 'bg-white/[0.04] text-white/60'}`}>
                   {offer.active ? t('Active') : t('Inactive')}
                 </span>
-                <button onClick={() => openEdit(offer)} aria-label={`Edit ${offer.name}`} className="p-1.5 text-white/40 hover:text-white/90 transition-colors">
+                <button onClick={() => openEdit(offer)} aria-label={`Edit ${offer.name}`} className="p-1.5 text-white/40 hover:text-primary hover:scale-125 transition-all duration-200">
                   <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => deleteOffer(offer.id)} aria-label={`Delete ${offer.name}`} className="p-1.5 text-white/40 hover:text-red-500 transition-colors">
-                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -155,12 +152,24 @@ export default function Loyalty() {
       </div>
 
         <div className="card overflow-hidden">
-          <div className="p-4 border-b border-white/[0.06]">
-            <h3 className="text-lg font-semibold text-white/90">{t('Customer Progress')}</h3>
-            <p className="text-sm text-white/40 mt-0.5">{t('Each')} {target}kg {t('milestone earns')} {reward}kg {t('free')} {t('on the crossing shipment')}</p>
+          <div className="p-4 border-b border-white/[0.06] space-y-3">
+            <div>
+              <h3 className="text-lg font-semibold text-white/90">{t('Customer Progress')}</h3>
+              <p className="text-sm text-white/40 mt-0.5">{t('Each')} {target}kg {t('milestone earns')} {reward}kg {t('free')} {t('on the crossing shipment')}</p>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+              <input
+                type="text"
+                placeholder={t('Search customers...')}
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+                className="input-field pl-9"
+              />
+            </div>
           </div>
           <div className="divide-y divide-white/[0.06]">
-            {customers.map((customer) => {
+            {filteredCustomers.map((customer) => {
               const milestonesCompleted = Math.floor(customer.totalKgSent / target);
               const progress = Math.max(0, customer.totalKgSent - milestonesCompleted * (target + reward));
               const percentage = Math.min(progress / target * 100, 100);
@@ -168,10 +177,13 @@ export default function Loyalty() {
               const kgToNext = target - progress;
               return (
               <div key={customer.id} className="p-5 flex flex-col md:flex-row md:items-center gap-4">
-                <div className="md:w-1/4">
-                  <div className="font-medium text-white/90">{customer.name}</div>
+                <button
+                  onClick={() => router.push(`/customer/${customer.id}`)}
+                  className="md:w-1/4 text-left group"
+                >
+                  <div className="font-medium text-white/90 group-hover:text-primary transition-colors">{customer.name}</div>
                   <div className="text-sm text-white/40">{customer.phone}</div>
-                </div>
+                </button>
                 <div className="flex-1">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-white/60">{t('Progress to next')} {reward}kg {t('bonus')}</span>
@@ -193,6 +205,9 @@ export default function Loyalty() {
               </div>
               );
             })}
+            {filteredCustomers.length === 0 && (
+              <div className="p-6 text-center text-white/40">{t('No customers found')}</div>
+            )}
           </div>
         </div>
 

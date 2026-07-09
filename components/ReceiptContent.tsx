@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Shipment, Customer, Settings, Category, ShippingItem } from '@/lib/store';
+import { formatLineItemQty } from '@/lib/lineItems';
 
 interface ReceiptContentProps {
   shipment: Shipment;
@@ -53,6 +54,7 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
 
       {/* ============ META ============ */}
        <div className="text-[11px] leading-relaxed py-3 mb-5 border-t border-b " style={{ borderColor: GRAY, color: BLACK }}>
+        <p><strong>ID No : </strong>#{shipment.idNo}</p>
         <p><strong>Track Id : </strong>{shipment.trackingNumber}</p>
         <p><strong>Date : </strong>{shipment.date}</p>
         <p className="mt-2"><strong>Client : </strong>{customer?.name || 'N/A'}</p>
@@ -74,7 +76,7 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
               return (
                 <div key={li.id || idx} className="flex justify-between items-baseline">
                   <span>
-                    {li.itemName} — {li.weightKg} kg ({li.quantity})
+                    {li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}
                   </span>
                   <span className="font-extrabold" style={{ color: BLACK }}>
                     {fmt(lineTotal)} {currency}
