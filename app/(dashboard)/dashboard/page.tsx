@@ -20,8 +20,10 @@ import { useT } from '@/lib/i18n';
 function calculateFinancials(shipments: any[], expenses: any[], settings: any, config: any) {
   const currency = settings?.currency || config?.defaults?.currency || 'MGA';
   const totalRevenue = shipments
-    .filter((s) => s.paymentStatus === 'Paid')
-    .reduce((sum, s) => sum + (s.finalAmount ?? s.basePrice ?? (s.weightKg * (settings?.defaultRatePerKg || 0))), 0);
+    .reduce((sum, s) => {
+      const amount = s.finalAmount ?? s.basePrice ?? (s.weightKg * (settings?.defaultRatePerKg || 0));
+      return sum + (s.paymentStatus === 'Paid' ? amount : (s.initialPayment || 0));
+    }, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const netProfit = totalRevenue - totalExpenses;
   return { totalRevenue, totalExpenses, netProfit, currency };
@@ -90,7 +92,8 @@ export default function Dashboard() {
       const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`);
       if (bucket) {
         bucket.kg += s.weightKg;
-        if (s.paymentStatus === 'Paid') bucket.revenue += (s.finalAmount ?? s.basePrice ?? s.weightKg * (settings?.defaultRatePerKg || 0));
+        const amount = s.finalAmount ?? s.basePrice ?? s.weightKg * (settings?.defaultRatePerKg || 0);
+        bucket.revenue += s.paymentStatus === 'Paid' ? amount : (s.initialPayment || 0);
       }
     });
     return buckets.map(({ name, kg, revenue }) => ({ name, kg, revenue }));

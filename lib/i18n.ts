@@ -114,7 +114,7 @@ const fr: Record<string, string> = {
   'Subtotal': 'Sous-total',
   'Offer discount': 'Remise offre',
   'Estimated total': 'Total estimé',
-  'Initial Payment (optional)': 'Acompte (optionnel)',
+  'Advance (optional)': 'Acompte (optionnel)',
   'Initial payment': 'Acompte',
   'Balance due': 'Solde à payer',
   'Create Shipment': 'Créer l\'expédition',

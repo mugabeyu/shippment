@@ -602,11 +602,10 @@ export default function Shipments() {
                       <option value="Paid">{t('Paid')}</option>
                     </select>
                   </Field>
-                  <Field label={t('Initial Payment (optional)')}>
+                  <Field label={t('Advance (optional)')}>
                     <input
                       type="number"
                       min="0"
-                      max={estimatedTotal || undefined}
                       value={initialPayment}
                       onChange={(e) => setInitialPayment(Math.max(0, Number(e.target.value) || 0))}
                       className={modalInput}
