@@ -67,6 +67,8 @@ export interface Shipment {
   basePrice?: number;
   discountAmount?: number;
   finalAmount?: number;
+  initialPayment?: number;
+  balanceDue?: number;
   shippingItemId?: string;
   routeDirection?: 'aller' | 'retour';
   lineItems?: ShipmentLineItem[];

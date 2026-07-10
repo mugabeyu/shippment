@@ -56,6 +56,7 @@ export default function Shipments() {
   const [description, setDescription] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Unpaid'>('Unpaid');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [initialPayment, setInitialPayment] = useState(0);
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
@@ -151,6 +152,8 @@ export default function Shipments() {
 
   const totalDiscount = offerDiscount + targetDiscount;
   const estimatedTotal = Math.max(0, lineItemsSubtotal - totalDiscount);
+  const clampedInitialPayment = Math.min(Math.max(0, initialPayment), estimatedTotal);
+  const balanceDue = Math.max(0, estimatedTotal - clampedInitialPayment);
   const currency = settings?.currency || defaults.currency || 'MGA';
 
   useEffect(() => {
@@ -224,6 +227,7 @@ export default function Shipments() {
       date: new Date().toISOString().split('T')[0],
       paymentStatus,
       paymentMethod,
+      initialPayment: clampedInitialPayment,
       receiptSent: false,
       photos,
       lineItems: lineItems.map((li) => ({
@@ -249,6 +253,7 @@ export default function Shipments() {
     setLineItems([]);
     setPhotos([]);
     setPaymentStatus('Unpaid');
+    setInitialPayment(0);
     setSelectedCategoryId('');
     setSelectedShippingItemId('');
     setAddWeight(1);
@@ -597,6 +602,17 @@ export default function Shipments() {
                       <option value="Paid">{t('Paid')}</option>
                     </select>
                   </Field>
+                  <Field label={t('Initial Payment (optional)')}>
+                    <input
+                      type="number"
+                      min="0"
+                      max={estimatedTotal || undefined}
+                      value={initialPayment}
+                      onChange={(e) => setInitialPayment(Math.max(0, Number(e.target.value) || 0))}
+                      className={modalInput}
+                      placeholder="0"
+                    />
+                  </Field>
                 </div>
 
                 {/* Price Preview */}
@@ -640,6 +656,18 @@ export default function Shipments() {
                         <span>{t('Estimated total')}</span>
                         <span>{estimatedTotal.toLocaleString()} {currency}</span>
                       </div>
+                      {clampedInitialPayment > 0 && (
+                        <>
+                          <div className="flex justify-between text-blue-400">
+                            <span>{t('Initial payment')}</span>
+                            <span>- {clampedInitialPayment.toLocaleString()} {currency}</span>
+                          </div>
+                          <div className="flex justify-between text-white/90 font-bold pt-1">
+                            <span>{t('Balance due')}</span>
+                            <span>{balanceDue.toLocaleString()} {currency}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

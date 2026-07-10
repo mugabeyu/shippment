@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { friendlyDbError } from '@/lib/dbErrors';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     logAudit(req, 'customer_updated', { id, name: body.name, phone: body.phone, email: body.email, active: body.active });
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { message, status } = friendlyDbError(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

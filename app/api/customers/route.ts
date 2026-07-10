@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { friendlyDbError } from '@/lib/dbErrors';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
     logAudit(req, 'customer_created', { name, phone, email });
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { message, status } = friendlyDbError(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }

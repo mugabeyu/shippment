@@ -37,6 +37,8 @@ export function mapShipment(row: any) {
     basePrice: row.base_price,
     discountAmount: row.discount_amount,
     finalAmount: row.final_amount,
+    initialPayment: row.initial_payment ?? 0,
+    balanceDue: Math.max(0, (row.final_amount ?? 0) - (row.initial_payment ?? 0)),
     shippingItemId: row.shipping_item_id,
     routeDirection: row.route_direction,
     lineItems,

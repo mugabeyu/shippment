@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
       specialInstructions,
       internalNotes,
       photos,
-      lineItems
+      lineItems,
+      initialPayment
     } = body;
 
     // Validate line items
@@ -108,6 +109,8 @@ export async function POST(req: NextRequest) {
     }
 
     const finalAmount = Math.max(0, basePrice - discountAmount);
+    // Deposit can't exceed what's actually owed.
+    const initialPaymentAmount = Math.min(Math.max(0, Number(initialPayment) || 0), finalAmount);
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
     const origin = routeDirection === 'retour' ? 'Mauritius' : 'Madagascar';
     const destination = routeDirection === 'retour' ? 'Madagascar' : 'Mauritius';
@@ -138,6 +141,7 @@ export async function POST(req: NextRequest) {
         base_price: basePrice,
         discount_amount: discountAmount,
         final_amount: finalAmount,
+        initial_payment: initialPaymentAmount,
         route_direction: routeDirection || null
       }])
       .select()

@@ -116,6 +116,8 @@ export function whatsappReceiptText(
   const baseCost =
     shipment.basePrice ?? shipment.weightKg * settings.defaultRatePerKg;
   const discount = shipment.discountAmount ?? 0;
+  const initialPayment = shipment.initialPayment ?? 0;
+  const balanceDue = shipment.balanceDue ?? Math.max(0, cost - initialPayment);
 
   let text =
     `*${settings.companyName.toUpperCase()} - RECEIPT*\n` +
@@ -137,7 +139,12 @@ export function whatsappReceiptText(
   } else {
     text += `Discount: 0 ${settings.currency}\n`;
   }
-  text += `*TOTAL: ${cost.toLocaleString()} ${settings.currency}*\n\n`;
+  if (initialPayment > 0) {
+    text += `Initial payment: - ${initialPayment.toLocaleString()} ${settings.currency}\n`;
+    text += `*BALANCE DUE: ${balanceDue.toLocaleString()} ${settings.currency}*\n\n`;
+  } else {
+    text += `*TOTAL: ${cost.toLocaleString()} ${settings.currency}*\n\n`;
+  }
   text += `Thank you for choosing ${settings.companyName}!`;
 
   return text;

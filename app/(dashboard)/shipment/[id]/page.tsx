@@ -82,8 +82,11 @@ export default function ShipmentDetail() {
   }
 
   const statusIdx = timelineSteps.findIndex((s) => s.key === shipment.status);
-  const cost = shipment.weightKg * (settings?.defaultRatePerKg || 0);
-  const fmtCost = `${cost.toLocaleString()} ${settings?.currency || 'MGA'}`;
+  const basePrice = shipment.basePrice ?? shipment.weightKg * (settings?.defaultRatePerKg || 0);
+  const discountAmount = shipment.discountAmount ?? 0;
+  const finalAmount = shipment.finalAmount ?? Math.max(0, basePrice - discountAmount);
+  const initialPayment = shipment.initialPayment ?? 0;
+  const balanceDue = shipment.balanceDue ?? Math.max(0, finalAmount - initialPayment);
 
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
@@ -340,10 +343,28 @@ export default function ShipmentDetail() {
                 <span className="text-white/60">{t('Method')}</span>
                 <span className="font-medium text-white/90">{shipment.paymentMethod}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-white/60">{t('Discount')}</span>
+                  <span className="font-medium text-emerald-400">- {discountAmount.toLocaleString()} {settings?.currency}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm pt-3 border-t border-white/[0.06]">
                 <span className="text-white/60">{t('Total')}</span>
-                <span className="font-bold text-white/90 text-lg">{cost.toLocaleString()} {settings?.currency || 'MGA'}</span>
+                <span className="font-bold text-white/90 text-lg">{finalAmount.toLocaleString()} {settings?.currency || 'MGA'}</span>
               </div>
+              {initialPayment > 0 && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/60">{t('Initial payment')}</span>
+                    <span className="font-medium text-blue-400">- {initialPayment.toLocaleString()} {settings?.currency}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="text-white/60">{t('Balance due')}</span>
+                    <span className="font-bold text-white/90">{balanceDue.toLocaleString()} {settings?.currency}</span>
+                  </div>
+                </>
+              )}
               <span className={`inline-flex items-center px-2.5 py-1 text-sm font-medium rounded-full ${shipment.paymentStatus === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-200' : 'bg-amber-500/10 text-amber-400 border border-amber-200'}`}>
                 {shipment.paymentStatus}
               </span>

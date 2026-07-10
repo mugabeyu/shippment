@@ -25,6 +25,8 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
   const subtotal = shipment.basePrice ?? lineItems.reduce((sum, li) => sum + li.unitPrice * li.weightKg * li.quantity, 0);
   const discountAmount = shipment.discountAmount ?? 0;
   const finalAmount = shipment.finalAmount ?? Math.max(0, subtotal - discountAmount);
+  const initialPayment = shipment.initialPayment ?? 0;
+  const balanceDue = shipment.balanceDue ?? Math.max(0, finalAmount - initialPayment);
 
   const routeLabel = shipment.routeDirection === 'retour'
     ? 'Retour (Mauritius \u2192 Madagascar)'
@@ -112,13 +114,20 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
           </div>
         )}
 
+        {initialPayment > 0 && (
+          <div className="flex justify-between" style={{ color: '#2563EB' }}>
+            <span>Acompte versé</span>
+            <span className="font-bold">- {fmt(initialPayment)} {currency}</span>
+          </div>
+        )}
+
         <div
           className="flex justify-between pt-2.5 mt-1 border-t-2 text-[13px]"
           style={{ borderColor: BLACK }}
         >
-          <span className="uppercase font-extrabold tracking-wide">Total à payer</span>
+          <span className="uppercase font-extrabold tracking-wide">Solde à payer</span>
           <span className="font-extrabold text-base" style={{ color: ORANGE }}>
-            {fmt(finalAmount)} {currency}
+            {fmt(balanceDue)} {currency}
           </span>
         </div>
       </div>
