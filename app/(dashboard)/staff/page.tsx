@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useStaff, type Staff } from '@/lib/swr';
-import { Search, Mail, Shield, Ban, UserCheck, UserPlus, Send } from 'lucide-react';
+import { Search, Mail, Shield, Ban, UserCheck, UserPlus, Send, Trash2 } from 'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { useToast } from '@/lib/toast';
 
 export default function Staff() {
-  const { staff, loading, updateStaff, toggleStaffActive, resendStaffInvite } = useStaff();
+  const { staff, loading, updateStaff, toggleStaffActive, resendStaffInvite, deleteStaff } = useStaff();
   const { activeStaffRole, activeStaffEmail } = useUiStore();
   const t = useT();
   const { toast } = useToast();
@@ -17,6 +17,7 @@ export default function Staff() {
   const [sending, setSending] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approvingRole, setApprovingRole] = useState<'Admin' | 'Staff'>('Staff');
+  const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
 
   const handleApprove = async (id: string) => {
     setSending(true);
@@ -50,6 +51,20 @@ export default function Staff() {
       toast('success', t('Invitation resent.'));
     } catch (err: any) {
       toast('error', err.message || t('Failed to resend invitation'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingStaff) return;
+    setSending(true);
+    try {
+      await deleteStaff(deletingStaff.id);
+      toast('success', `${deletingStaff.name || deletingStaff.email} ${t('has been deleted.')}`);
+      setDeletingStaff(null);
+    } catch (err: any) {
+      toast('error', err.message || t('Failed to delete staff'));
     } finally {
       setSending(false);
     }
@@ -168,12 +183,42 @@ export default function Staff() {
                       {s.active ? t('Block') : t('Unblock')}
                     </button>
                   )}
+                  {isAdmin && (
+                    <button
+                      disabled={!canManage || sending}
+                      onClick={() => setDeletingStaff(s)}
+                      title={isSelf ? t('You cannot delete your own account.') : t('Delete')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                        !canManage ? 'text-white/20 cursor-not-allowed' : 'text-red-400 hover:bg-red-500/10'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t('Delete')}
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {deletingStaff && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setDeletingStaff(null)}>
+          <div className="bg-[#12141C] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-white/90">{t('Delete staff member?')}</h2>
+            <p className="text-sm text-white/50 mt-2">
+              {t('This will permanently remove')} <span className="text-white/80 font-medium">{deletingStaff.name || deletingStaff.email}</span> {t('and revoke their login access. This cannot be undone.')}
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button onClick={() => setDeletingStaff(null)} disabled={sending} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">{t('Cancel')}</button>
+              <button onClick={handleDelete} disabled={sending} className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors disabled:opacity-50">
+                {t('Delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

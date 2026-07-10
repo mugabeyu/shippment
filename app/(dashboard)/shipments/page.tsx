@@ -522,7 +522,7 @@ export default function Shipments() {
                     </div>
                     <div>
                       <label className="block text-xs text-white/40 mb-1">{t('Weight (kg)')}</label>
-                      <input type="number" min="1" value={addWeight} onChange={(e) => setAddWeight(Math.max(1, Number(e.target.value) || 1))} className={modalInput} />
+                      <input type="number" min="1" step="0.01" value={addWeight} onChange={(e) => setAddWeight(Math.max(1, Number(e.target.value) || 1))} className={modalInput} />
                     </div>
                     <div>
                       <label className="block text-xs text-white/40 mb-1">{t('Quantity')}</label>

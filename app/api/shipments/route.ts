@@ -67,13 +67,18 @@ export async function POST(req: NextRequest) {
     const activeOffer = offerResult.data;
     const customer = customerResult.data as Record<string, any> | null;
 
-    // Compute pricing from line items
+    // Compute pricing from line items. Weight can be fractional (e.g. 4.2kg), so the
+    // per-line total is rounded to whole currency units before it's summed/stored —
+    // the currencies this app deals in (MGA/Rs) don't have a usable subunit.
     let basePrice = 0;
+    const lineTotals: number[] = [];
     for (const li of lineItems) {
       const unitPrice = Number(li.unitPrice) || 0;
       const qty = Math.max(1, Number(li.quantity) || 1);
       const wkg = Math.max(1, Number(li.weightKg) || 1);
-      basePrice += unitPrice * qty * wkg;
+      const lineTotal = Math.round(unitPrice * qty * wkg);
+      lineTotals.push(lineTotal);
+      basePrice += lineTotal;
     }
 
     // Discount logic
@@ -110,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const finalAmount = Math.max(0, basePrice - discountAmount);
     // Deposit can't exceed what's actually owed.
-    const initialPaymentAmount = Math.min(Math.max(0, Number(initialPayment) || 0), finalAmount);
+    const initialPaymentAmount = Math.min(Math.max(0, Math.round(Number(initialPayment) || 0)), finalAmount);
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
     const origin = routeDirection === 'retour' ? 'Mauritius' : 'Madagascar';
     const destination = routeDirection === 'retour' ? 'Madagascar' : 'Mauritius';
@@ -150,7 +155,7 @@ export async function POST(req: NextRequest) {
     if (shipmentError) throw shipmentError;
 
     // Insert line items
-    const lineItemInserts = lineItems.map((li: any) => ({
+    const lineItemInserts = lineItems.map((li: any, idx: number) => ({
       shipment_id: shipment.id,
       shipping_item_id: li.shippingItemId || null,
       item_name: li.itemName,
@@ -158,7 +163,7 @@ export async function POST(req: NextRequest) {
       quantity: Math.max(1, Number(li.quantity) || 1),
       weight_kg: Math.max(1, Number(li.weightKg) || 1),
       unit_price: Number(li.unitPrice) || 0,
-      line_total: (Number(li.unitPrice) || 0) * Math.max(1, Number(li.quantity) || 1) * Math.max(1, Number(li.weightKg) || 1)
+      line_total: lineTotals[idx]
     }));
 
     const { data: insertedLineItems, error: lineError } = await supabase()

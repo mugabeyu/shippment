@@ -153,6 +153,12 @@ const fr: Record<string, string> = {
   'Invitation resent.': 'Invitation renvoyée.',
   'Failed to resend invitation': 'Échec du renvoi de l\'invitation',
   'Loading staff...': 'Chargement du personnel...',
+  'You cannot delete your own account.': 'Vous ne pouvez pas supprimer votre propre compte.',
+  'Delete staff member?': 'Supprimer ce membre du personnel ?',
+  'This will permanently remove': 'Cette action supprimera définitivement',
+  'and revoke their login access. This cannot be undone.': 'et révoquera son accès. Cette action est irréversible.',
+  'has been deleted.': 'a été supprimé.',
+  'Failed to delete staff': 'Échec de la suppression du personnel',
 
   // Categories
   'Categories & Shipping Items': 'Catégories et articles d\'expédition',
