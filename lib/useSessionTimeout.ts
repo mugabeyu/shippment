@@ -34,6 +34,13 @@ export function useSessionTimeout(onTimeout?: () => void) {
     touchSession();
 
     const scheduleNext = () => {
+      // Each call replaces the pending logout/warning timers — without this, every
+      // activity event (throttled to ~1/15s) stacked another uncleared setTimeout,
+      // so the very first one (from page load) would still fire and log the user
+      // out ~30 minutes later even with continuous activity.
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+      if (warningRef.current) { clearTimeout(warningRef.current); warningRef.current = null; }
+
       const remaining = getRemainingTime();
       if (remaining <= 0) {
         onTimeout?.();
@@ -65,7 +72,7 @@ export function useSessionTimeout(onTimeout?: () => void) {
       const now = Date.now();
       if (now - lastActivityRef.current < ACTIVITY_THROTTLE_MS) return;
       lastActivityRef.current = now;
-      touchSession();
+      reset();
       scheduleNext();
     };
 
