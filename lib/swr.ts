@@ -3,6 +3,7 @@
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCallback } from 'react';
 import { api } from './api';
+import { useUiStore } from './store';
 
 const fetcher = (key: [string, ...any[]]) => {
   const [path, ...args] = key;
@@ -21,6 +22,7 @@ const fetcher = (key: [string, ...any[]]) => {
     case 'audit': return api.getAuditLogs(args[0]);
     case 'shipping-items': return api.getShippingItems();
     case 'config': return api.getConfig();
+    case 'work-sessions': return api.getWorkSessions();
     default: return Promise.resolve(undefined);
   }
 };
@@ -32,6 +34,7 @@ let configCache: Record<string, any> | null = null;
 export function useAppConfig() {
   const { data, error, isLoading } = useSWR('config', () => api.getConfig(), {
     revalidateOnFocus: false,
+    refreshInterval: 0, // rarely changes — no need to poll
   });
   return { config: data ?? configCache ?? null, loading: isLoading, error };
 }
@@ -68,6 +71,38 @@ export function useStaff() {
   }, [mutate]);
 
   return { staff, loading: isLoading, error: error?.message, reload: () => mutate(), inviteStaff, resendStaffInvite, completeStaffProfile, updateStaff, deleteStaff, toggleStaffActive };
+}
+
+export function useWorkSessions() {
+  const { data, error, isLoading, mutate } = useSWR('work-sessions', () => api.getWorkSessions());
+  const sessions = data ?? [];
+  return { sessions, loading: isLoading, error: error?.message, reload: () => mutate(), mutate };
+}
+
+// The current staff member's own work-session state — drives the topbar
+// Start/End Work toggle. Every mutating API route requires this session to be
+// open before it will accept a create/edit/delete.
+export function useWorkSession() {
+  const { activeStaffEmail } = useUiStore();
+  const { sessions, loading, error, mutate } = useWorkSessions();
+  const mySession = sessions.find((s: any) => s.staffEmail === activeStaffEmail && !s.endedAt) ?? null;
+
+  // Write the server's response straight into the SWR cache (same pattern as
+  // every other hook here, e.g. useStaff's inviteStaff) instead of triggering
+  // a second round-trip revalidation fetch — the button updates instantly.
+  const startWork = useCallback(async () => {
+    const created = await api.startWorkSession();
+    mutate((prev: any[] = []) => [created, ...prev], false);
+    return created;
+  }, [mutate]);
+
+  const endWork = useCallback(async () => {
+    const ended = await api.endWorkSession();
+    mutate((prev: any[] = []) => prev.map((s) => (s.id === ended.id ? ended : s)), false);
+    return ended;
+  }, [mutate]);
+
+  return { session: mySession, loading, error, startWork, endWork };
 }
 
 export function useCustomers() {

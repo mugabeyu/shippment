@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
 import { mapShipment } from '@/lib/mappers';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const body = await req.json();
     const {
       customerId,
@@ -67,18 +71,42 @@ export async function POST(req: NextRequest) {
     const activeOffer = offerResult.data;
     const customer = customerResult.data as Record<string, any> | null;
 
-    // Compute pricing from line items. Weight can be fractional (e.g. 4.2kg), so the
-    // per-line total is rounded to whole currency units before it's summed/stored —
-    // the currencies this app deals in (MGA/Rs) don't have a usable subunit.
+    // Items are billed flat per item (unitPrice x quantity) unless they belong to the
+    // "Kilograms" category (pricing_mode = 'per_kg'), which bills unitPrice x weightKg x
+    // quantity — the same category flag is what makes Kilograms-only weight feed the
+    // Offers/loyalty milestone math below.
+    const shippingItemIds = Array.from(new Set(lineItems.map((li: any) => li.shippingItemId).filter(Boolean)));
+    const { data: itemRows } = shippingItemIds.length
+      ? await supabase().from('shipping_items').select('id, category:categories(pricing_mode)').in('id', shippingItemIds)
+      : { data: [] as any[] };
+    const pricingModeById = new Map(
+      (itemRows || []).map((r: any) => [r.id, r.category?.pricing_mode === 'per_kg' ? 'per_kg' : 'per_item'])
+    );
+    const pricingModeFor = (li: any) => pricingModeById.get(li.shippingItemId) || 'per_item';
+
+    // Weight can be fractional (e.g. 4.2kg), so the per-line total is rounded to whole
+    // currency units before it's summed/stored — the currencies this app deals in
+    // (MGA/Rs) don't have a usable subunit.
     let basePrice = 0;
+    let perKgBasePrice = 0;
     const lineTotals: number[] = [];
+    const lineWeights: (number | null)[] = [];
     for (const li of lineItems) {
       const unitPrice = Number(li.unitPrice) || 0;
-      const qty = Math.max(1, Number(li.quantity) || 1);
-      const wkg = Math.max(1, Number(li.weightKg) || 1);
-      const lineTotal = Math.round(unitPrice * qty * wkg);
-      lineTotals.push(lineTotal);
-      basePrice += lineTotal;
+      const qty = Math.max(0.01, Number(li.quantity) || 1);
+      if (pricingModeFor(li) === 'per_kg') {
+        const wkg = Math.max(1, Number(li.weightKg) || 1);
+        lineWeights.push(wkg);
+        const lineTotal = Math.round(unitPrice * qty * wkg);
+        lineTotals.push(lineTotal);
+        basePrice += lineTotal;
+        perKgBasePrice += lineTotal;
+      } else {
+        lineWeights.push(null);
+        const lineTotal = Math.round(unitPrice * qty);
+        lineTotals.push(lineTotal);
+        basePrice += lineTotal;
+      }
     }
 
     // Discount logic
@@ -91,9 +119,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Total weight from all line items
+    // Total weight only from Kilograms-category (per_kg) line items — per-item lines
+    // don't carry a billable weight, so they contribute 0 to the shipment/customer total.
     const totalWeight = lineItems.reduce((sum: number, li: any) => {
-      return sum + (Number(li.weightKg) || 1) * (Number(li.quantity) || 1);
+      if (pricingModeFor(li) !== 'per_kg') return sum;
+      return sum + Math.max(1, Number(li.weightKg) || 1) * Math.max(0.01, Number(li.quantity) || 1);
     }, 0);
 
     const prevKg = customer?.total_kg_sent || 0;
@@ -108,7 +138,7 @@ export async function POST(req: NextRequest) {
       const earned = Math.max(0, milestonesAfter - milestonesBefore);
 
       if (earned > 0) {
-        const avgPricePerKg = Math.round(basePrice / Math.max(1, totalWeight));
+        const avgPricePerKg = Math.round(perKgBasePrice / Math.max(1, totalWeight));
         discountAmount += Math.round(reward * earned * avgPricePerKg);
       }
     }
@@ -147,7 +177,9 @@ export async function POST(req: NextRequest) {
         discount_amount: discountAmount,
         final_amount: finalAmount,
         initial_payment: initialPaymentAmount,
-        route_direction: routeDirection || null
+        route_direction: routeDirection || null,
+        created_by: gate.staff.id,
+        work_session_id: gate.session.id
       }])
       .select()
       .single();
@@ -160,8 +192,8 @@ export async function POST(req: NextRequest) {
       shipping_item_id: li.shippingItemId || null,
       item_name: li.itemName,
       category_name: li.categoryName || null,
-      quantity: Math.max(1, Number(li.quantity) || 1),
-      weight_kg: Math.max(1, Number(li.weightKg) || 1),
+      quantity: Math.max(0.01, Number(li.quantity) || 1),
+      weight_kg: lineWeights[idx],
       unit_price: Number(li.unitPrice) || 0,
       line_total: lineTotals[idx]
     }));
@@ -178,6 +210,7 @@ export async function POST(req: NextRequest) {
     }
 
     logAudit(req, 'shipment_created', {
+      id: shipment.id,
       trackingNumber: shipment.tracking_number,
       customerId,
       routeDirection,

@@ -36,7 +36,8 @@ export interface ShipmentLineItem {
   itemName: string;
   categoryName?: string;
   quantity: number;
-  weightKg: number;
+  // null for items billed flat per item — only Kilograms-category (per_kg) lines carry a weight.
+  weightKg: number | null;
   unitPrice: number;
   lineTotal: number;
 }
@@ -71,6 +72,8 @@ export interface Shipment {
   balanceDue?: number;
   shippingItemId?: string;
   routeDirection?: 'aller' | 'retour';
+  createdBy?: string | null;
+  workSessionId?: string | null;
   lineItems?: ShipmentLineItem[];
 }
 
@@ -81,6 +84,7 @@ export interface Category {
   handlingNotes: string;
   icon?: string;
   pricePerKg?: number;
+  pricingMode?: 'per_item' | 'per_kg';
 }
 
 export interface Offer {
@@ -104,6 +108,7 @@ export interface ShippingItem {
   id: string;
   categoryId: string;
   categoryName?: string; // populated via JOIN in some queries
+  categoryPricingMode?: 'per_item' | 'per_kg';
   item: string;
   allerPrice: number;
   retourPrice: number | null; // null = not available for Retour
@@ -169,6 +174,8 @@ export interface Expense {
   amount: number;
   note: string;
   attachmentUrl?: string;
+  createdBy?: string | null;
+  workSessionId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

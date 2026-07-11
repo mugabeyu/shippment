@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const { name, targetKg, rewardKg, discountPercent, discountAmount, active } = await req.json();
     const { data, error } = await supabase()
@@ -52,6 +56,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const { error } = await supabase()
       .from('offers')

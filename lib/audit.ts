@@ -7,7 +7,7 @@ import { getServiceSupabase } from './supabase/server';
  * session cookie (same mechanism the auth middleware in proxy.ts uses).
  * Returns null when there is no authenticated session.
  */
-async function getActingStaff(req: NextRequest) {
+export async function getActingStaff(req: NextRequest) {
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

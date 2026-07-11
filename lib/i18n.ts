@@ -342,6 +342,55 @@ const fr: Record<string, string> = {
   'No shipments found for this customer.': 'Aucune expédition trouvée pour ce client.',
   'Download PDF receipt': 'Télécharger le reçu PDF',
   'Send receipt via WhatsApp': 'Envoyer le reçu via WhatsApp',
+
+  // Work sessions
+  'Start Work': 'Commencer le travail',
+  'End Work': 'Terminer le travail',
+  'Started': 'Commencé à',
+  'Start your work session to make changes': 'Commencez votre session de travail pour effectuer des modifications',
+
+  // Categories — pricing mode
+  'Billed per kg': 'Facturé au kg',
+  'Billed by weight (kg)': 'Facturé au poids (kg)',
+  'Items in this category are priced per kilogram instead of per item, and only this category feeds the Offers loyalty milestones.': 'Les articles de cette catégorie sont facturés au kilogramme plutôt qu\'à l\'unité, et seule cette catégorie alimente les paliers de fidélité des Offres.',
+
+  // Staff Work (formerly Audit Logs)
+  'Staff Work': 'Travail du personnel',
+  'Track staff work sessions, their actions, and financial performance per session.': 'Suivez les sessions de travail du personnel, leurs actions et leurs performances financières par session.',
+  'All Staff': 'Tout le personnel',
+  'All Routes': 'Tous les trajets',
+  'Ended': 'Terminé',
+  'No work sessions found for this date.': 'Aucune session de travail trouvée pour cette date.',
+  'Loading staff work...': 'Chargement du travail du personnel...',
+  'Activity on': 'Activité du',
+  'Shipments Created': 'Expéditions créées',
+  'Customers Added': 'Clients ajoutés',
+  'Expenses Logged': 'Dépenses enregistrées',
+  'Other Actions': 'Autres actions',
+  'Work Sessions': 'Sessions de travail',
+  'Search by staff name or activity...': 'Rechercher par nom ou activité...',
+  'System': 'Système',
+
+  // Dashboard totals row
+  'Total Customers': 'Total clients',
+  'Total Shipments': 'Total expéditions',
+  'Total Items': 'Total articles',
+  'Total Staff': 'Total personnel',
+  'active': 'actifs',
+  'pending': 'en attente',
+  'shipping items': 'articles d\'expédition',
+
+  // Staff Work — period filtering
+  'Showing': 'Affichage',
+  'Whole day': 'Journée entière',
+  'Clear': 'Réinitialiser',
+  'Work Periods': 'Périodes de travail',
+  'this day': 'ce jour',
+  'Click a period to see just that session\'s activity.': 'Cliquez sur une période pour voir uniquement l\'activité de cette session.',
+
+  // Danger Zone — status override
+  'Change Shipment Status': 'Modifier le statut de l\'expédition',
+  'Force this shipment to any status, including Cancelled. Use with care.': 'Forcez le statut de cette expédition, y compris Annulé. À utiliser avec précaution.',
 };
 
 interface LangState {

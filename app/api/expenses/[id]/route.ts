@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ function mapExpense(row: any) {
     amount: row.amount,
     note: row.note ?? '',
     attachmentUrl: row.attachment_url ?? null,
+    createdBy: row.created_by ?? null,
+    workSessionId: row.work_session_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -36,6 +39,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const { date, category, amount, note, attachmentUrl } = await req.json();
     const { data, error } = await supabase()
@@ -54,6 +60,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const { error } = await supabase()
       .from('expenses')

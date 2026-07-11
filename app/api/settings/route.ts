@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,9 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { companyName, contactEmail, phone, address, currency, defaultRatePerKg, paymentMethods, loyaltyEnabled, taxEnabled, taxRate } = await req.json();
     const { data: existingRows, error: lookupError } = await supabase()
       .from('settings')

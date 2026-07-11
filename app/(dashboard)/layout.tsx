@@ -24,13 +24,15 @@ import {
   ChevronLeft,
   ChevronRight,
   DollarSign,
-  Languages
+  Languages,
+  Play,
+  Square
 } from
   'lucide-react';
 import { useUiStore } from '@/lib/store';
 import { useT, useLangStore } from '@/lib/i18n';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
-import { useAppConfig } from '@/lib/swr';
+import { useAppConfig, useWorkSession } from '@/lib/swr';
 import { supabase } from '@/lib/supabase/client';
 import { ToastProvider } from '@/lib/toast';
 
@@ -49,7 +51,7 @@ const DEFAULT_NAV: NavItem[] = [
   { path: '/offers', label: 'Offers', icon: 'Gift' },
   { path: '/expenses', label: 'Expenses', icon: 'DollarSign' },
   { path: '/reports', label: 'Reports', icon: 'BarChart3' },
-  { path: '/audit', label: 'Audit Logs', icon: 'AlertTriangle' },
+  { path: '/audit', label: 'Staff Work', icon: 'AlertTriangle' },
   { path: '/notifications', label: 'Notifications', icon: 'Bell' },
 
   { path: '/settings', label: 'Settings', icon: 'Settings' },
@@ -86,10 +88,10 @@ export default function DashboardLayout({ children }: LayoutProps) {
   if (!baseNav.some((item) => item.path === '/expenses')) {
     baseNav.splice(4, 0, { path: '/expenses', label: 'Expenses', icon: 'DollarSign' });
   }
-  // Ensure Audit Logs is always in the nav (below Reports) for staff activity monitoring
+  // Ensure Staff Work is always in the nav (below Reports) for staff activity monitoring
   if (!baseNav.some((item) => item.path === '/audit')) {
     const reportsIdx = baseNav.findIndex((item) => item.path === '/reports');
-    baseNav.splice(reportsIdx + 1, 0, { path: '/audit', label: 'Audit Logs', icon: 'AlertTriangle' });
+    baseNav.splice(reportsIdx + 1, 0, { path: '/audit', label: 'Staff Work', icon: 'AlertTriangle' });
   }
   const navItems: ResolvedNavItem[] = baseNav
     .map((item: NavItem) => ({
@@ -106,8 +108,35 @@ export default function DashboardLayout({ children }: LayoutProps) {
     return false;
   });
   const [sessionWarning, setSessionWarning] = useState<{ remainingMinutes: number } | null>(null);
+  const { session: workSession, startWork, endWork } = useWorkSession();
+  const [workBusy, setWorkBusy] = useState(false);
+  const [workError, setWorkError] = useState<string | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const handleStartWork = async () => {
+    setWorkBusy(true);
+    setWorkError(null);
+    try {
+      await startWork();
+    } catch (err: any) {
+      setWorkError(err.message || 'Failed to start work session');
+    } finally {
+      setWorkBusy(false);
+    }
+  };
+
+  const handleEndWork = async () => {
+    setWorkBusy(true);
+    setWorkError(null);
+    try {
+      await endWork();
+    } catch (err: any) {
+      setWorkError(err.message || 'Failed to end work session');
+    } finally {
+      setWorkBusy(false);
+    }
+  };
 
   useSessionTimeout(async () => {
     try {
@@ -291,7 +320,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               </span>
             </div>
             <ul className="space-y-1.5 px-2 mb-5">
-              {navItems.filter(i => ['Reports','Audit Logs','Notifications'].includes(i.label)).map((item) => {
+              {navItems.filter(i => ['Reports','Staff Work','Notifications'].includes(i.label)).map((item) => {
                 const Icon = item.component;
                 const isActive = pathname.startsWith(item.path);
                 return (
@@ -392,6 +421,32 @@ export default function DashboardLayout({ children }: LayoutProps) {
             <span className="text-sm text-orange-400 font-mono tracking-wide">
               {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
             </span>
+            <div className="relative">
+              <button
+                onClick={workSession ? handleEndWork : handleStartWork}
+                disabled={workBusy}
+                title={workSession ? `${t('Started')} ${new Date(workSession.startedAt).toLocaleTimeString()}` : t('Start your work session to make changes')}
+                className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 disabled:opacity-50 ${
+                  workSession
+                    ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20 hover:border-red-500/50'
+                    : 'border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/60 animate-pulse-glow'
+                }`}
+              >
+                {workSession ? (
+                  <Square className="w-6 h-6 text-red-400 fill-red-400 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <Play className="w-6 h-6 text-emerald-400 fill-emerald-400 group-hover:scale-110 transition-transform" />
+                )}
+                <span className={`text-sm font-bold tracking-wide uppercase ${workSession ? 'text-red-300' : 'text-emerald-300'}`}>
+                  {workSession ? t('End Work') : t('Start Work')}
+                </span>
+              </button>
+              {workError && (
+                <div className="absolute right-0 top-full mt-2 w-56 p-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-300 z-50 shadow-xl">
+                  {workError}
+                </div>
+              )}
+            </div>
             <button
               onClick={toggle}
               title={lang === 'en' ? 'Translate to French' : 'Traduire en anglais'}

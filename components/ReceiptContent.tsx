@@ -22,7 +22,7 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
   const currency = settings?.currency || 'MGA';
   const lineItems = shipment.lineItems || [];
 
-  const subtotal = shipment.basePrice ?? lineItems.reduce((sum, li) => sum + li.unitPrice * li.weightKg * li.quantity, 0);
+  const subtotal = shipment.basePrice ?? lineItems.reduce((sum, li) => sum + li.lineTotal, 0);
   const discountAmount = shipment.discountAmount ?? 0;
   const finalAmount = shipment.finalAmount ?? Math.max(0, subtotal - discountAmount);
   const initialPayment = shipment.initialPayment ?? 0;
@@ -33,7 +33,7 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
     : 'Aller (Madagascar \u2192 Mauritius)';
 
   const totalWeight = lineItems.length > 0
-    ? lineItems.reduce((sum, li) => sum + li.weightKg * li.quantity, 0)
+    ? lineItems.reduce((sum, li) => sum + (li.weightKg != null ? li.weightKg * li.quantity : 0), 0)
     : (shipment.weightKg || 0);
 
   const fmt = (n: number) => n.toLocaleString();
@@ -74,14 +74,13 @@ export default function ReceiptContent({ shipment, customer, settings, categorie
         {lineItems.length > 0 ? (
           <div className="space-y-1.5 text-[11px] ">
             {lineItems.map((li, idx) => {
-              const lineTotal = li.unitPrice * li.weightKg * li.quantity;
               return (
                 <div key={li.id || idx} className="flex justify-between items-baseline">
                   <span>
-                    {li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}
+                    {li.itemName} — {formatLineItemQty(li.weightKg, li.quantity)}
                   </span>
                   <span className="font-extrabold" style={{ color: BLACK }}>
-                    {fmt(lineTotal)} {currency}
+                    {fmt(li.lineTotal)} {currency}
                   </span>
                 </div>
               );

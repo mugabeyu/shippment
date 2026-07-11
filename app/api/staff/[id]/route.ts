@@ -3,6 +3,7 @@ import { getServiceSupabase, getAdminSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const body = await req.json();
     const updateData: Record<string, any> = { updated_at: new Date() };
@@ -100,6 +104,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const adminError = await requireAdmin();
     if (adminError) return adminError;
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
 
     const { id } = await params;
     const { data: staff } = await supabase()

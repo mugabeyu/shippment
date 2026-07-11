@@ -41,6 +41,8 @@ export function mapShipment(row: any) {
     balanceDue: Math.max(0, (row.final_amount ?? 0) - (row.initial_payment ?? 0)),
     shippingItemId: row.shipping_item_id,
     routeDirection: row.route_direction,
+    createdBy: row.created_by ?? null,
+    workSessionId: row.work_session_id ?? null,
     lineItems,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase, getAdminSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { email, role } = await req.json();
     if (!email || !role) {
       return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });

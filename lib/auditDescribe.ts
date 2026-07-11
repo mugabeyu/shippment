@@ -144,6 +144,15 @@ const TEMPLATES: Record<string, Tpl> = {
     en: (d) => `Signed in${d.device ? ` from ${v(d.device)}` : ''}`,
     fr: (d) => `Connecté(e)${d.device ? ` depuis ${v(d.device)}` : ''}`,
   },
+
+  work_session_started: {
+    en: () => `Started a work session`,
+    fr: () => `Session de travail démarrée`,
+  },
+  work_session_ended: {
+    en: () => `Ended their work session`,
+    fr: () => `Session de travail terminée`,
+  },
 };
 
 export function describeAudit(
@@ -193,6 +202,8 @@ const FR_LABELS: Record<string, string> = {
   settings_updated: 'Paramètres mis à jour',
   settings_created: 'Paramètres créés',
   admin_login: 'Connexion',
+  work_session_started: 'Session démarrée',
+  work_session_ended: 'Session terminée',
 };
 
 export function actionLabel(action: string): string {
@@ -203,6 +214,21 @@ export function actionLabel(action: string): string {
 
 export function formatAction(action: string): string {
   return action.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+// Where clicking an audit log entry should navigate to. Shipments/customers
+// have their own detail pages so we deep-link straight to the record; every
+// other action type links to its management list page instead.
+export function auditLogHref(action: string, details: Record<string, any> | null | undefined): string | null {
+  const d = details || {};
+  if (action.startsWith('shipment_')) return d.id ? `/shipment/${d.id}` : null;
+  if (action.startsWith('customer_')) return d.id ? `/customer/${d.id}` : null;
+  if (action.startsWith('category_') || action.startsWith('shipping_item_')) return '/categories';
+  if (action.startsWith('offer_')) return '/offers';
+  if (action.startsWith('staff_')) return '/staff';
+  if (action.startsWith('expense_')) return '/expenses';
+  if (action.startsWith('settings_')) return '/settings';
+  return null;
 }
 
 function humanize(key: string): string {

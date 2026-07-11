@@ -67,7 +67,7 @@ export default function Shipments() {
     itemName: string;
     categoryName: string;
     unitPrice: number;
-    weightKg: number;
+    weightKg: number | null;
     quantity: number;
   }>>([]);
 
@@ -103,19 +103,25 @@ export default function Shipments() {
     return shippingItems.find((si) => si.id === selectedShippingItemId);
   }, [shippingItems, selectedShippingItemId]);
 
-  // Pricing
+  const isPerKg = selectedItem?.categoryPricingMode === 'per_kg';
+
+  // Pricing — items are billed flat per item (unitPrice x quantity) unless their
+  // category is billed by weight (Kilograms category), in which case weightKg
+  // multiplies in too.
   const lineItemsSubtotal = useMemo(() => {
-    return lineItems.reduce((sum, li) => sum + li.unitPrice * li.weightKg * li.quantity, 0);
+    return lineItems.reduce((sum, li) => sum + (li.weightKg != null ? li.unitPrice * li.weightKg * li.quantity : li.unitPrice * li.quantity), 0);
   }, [lineItems]);
 
   const currentLineTotal = useMemo(() => {
     if (!selectedItem) return 0;
     const price = routeDirection === 'retour' ? (selectedItem.retourPrice ?? selectedItem.allerPrice) : selectedItem.allerPrice;
-    return price * addWeight * addQty;
-  }, [selectedItem, routeDirection, addWeight, addQty]);
+    return isPerKg ? price * addWeight * addQty : price * addQty;
+  }, [selectedItem, routeDirection, addWeight, addQty, isPerKg]);
 
+  // Only Kilograms-category lines carry billable weight — this is also what feeds
+  // the customer's loyalty total_kg_sent below.
   const totalWeight = useMemo(() => {
-    return lineItems.reduce((sum, li) => sum + li.weightKg * li.quantity, 0);
+    return lineItems.reduce((sum, li) => sum + (li.weightKg != null ? li.weightKg * li.quantity : 0), 0);
   }, [lineItems]);
 
   const offerDiscount = activeOffer
@@ -175,7 +181,7 @@ export default function Shipments() {
       itemName: selectedItem.item,
       categoryName: selectedItem.categoryName || '',
       unitPrice: price,
-      weightKg: addWeight,
+      weightKg: isPerKg ? addWeight : null,
       quantity: addQty,
     }]);
     setLiCounter((c) => c + 1);
@@ -187,6 +193,18 @@ export default function Shipments() {
 
   const handleRemoveLineItem = (key: string) => {
     setLineItems((prev) => prev.filter((li) => li.key !== key));
+  };
+
+  // Quick status changes (status dropdown, "Mark Delivered" buttons) — always
+  // go through this so a failure (e.g. no work session started) surfaces as a
+  // toast instead of an unhandled promise rejection crashing the page.
+  const handleQuickStatusChange = async (id: string, trackingNumber: string, status: ShipmentStatus) => {
+    try {
+      await updateShipmentStatus(id, status);
+      toast('success', `${trackingNumber} → ${status}`);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to update status');
+    }
   };
 
   // --- Photo upload ---
@@ -218,46 +236,50 @@ export default function Shipments() {
     e.preventDefault();
     if (!customerId) return;
     if (lineItems.length === 0) return;
-    // Tracking number is assigned server-side (A-01.. / R-01.. per route direction).
-    const created = await addShipment({
-      customerId,
-      routeDirection,
-      description,
-      status: 'Pending',
-      date: new Date().toISOString().split('T')[0],
-      paymentStatus,
-      paymentMethod,
-      initialPayment: clampedInitialPayment,
-      receiptSent: false,
-      photos,
-      lineItems: lineItems.map((li) => ({
-        shippingItemId: li.shippingItemId,
-        itemName: li.itemName,
-        categoryName: li.categoryName,
-        weightKg: li.weightKg,
-        quantity: li.quantity,
-        unitPrice: li.unitPrice,
-      }))
-    });
-    if (targetDiscount > 0) {
-      toast('success', `🎉 Milestone reached! ${rewardKg}kg free (-${targetDiscount.toLocaleString()} ${currency})`);
-    } else {
-      toast('success', `Shipment ${created?.trackingNumber ?? ''} created`);
+    try {
+      // Tracking number is assigned server-side (A-01.. / R-01.. per route direction).
+      const created = await addShipment({
+        customerId,
+        routeDirection,
+        description,
+        status: 'Pending',
+        date: new Date().toISOString().split('T')[0],
+        paymentStatus,
+        paymentMethod,
+        initialPayment: clampedInitialPayment,
+        receiptSent: false,
+        photos,
+        lineItems: lineItems.map((li) => ({
+          shippingItemId: li.shippingItemId,
+          itemName: li.itemName,
+          categoryName: li.categoryName,
+          weightKg: li.weightKg,
+          quantity: li.quantity,
+          unitPrice: li.unitPrice,
+        }))
+      });
+      if (targetDiscount > 0) {
+        toast('success', `🎉 Milestone reached! ${rewardKg}kg free (-${targetDiscount.toLocaleString()} ${currency})`);
+      } else {
+        toast('success', `Shipment ${created?.trackingNumber ?? ''} created`);
+      }
+      setIsNewModalOpen(false);
+      setCustomerSearch('');
+      setShowCustomerDropdown(false);
+      setCustomerId('');
+      setRouteDirection('aller');
+      setDescription('');
+      setLineItems([]);
+      setPhotos([]);
+      setPaymentStatus('Unpaid');
+      setInitialPayment(0);
+      setSelectedCategoryId('');
+      setSelectedShippingItemId('');
+      setAddWeight(1);
+      setAddQty(1);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to create shipment');
     }
-    setIsNewModalOpen(false);
-    setCustomerSearch('');
-    setShowCustomerDropdown(false);
-    setCustomerId('');
-    setRouteDirection('aller');
-    setDescription('');
-    setLineItems([]);
-    setPhotos([]);
-    setPaymentStatus('Unpaid');
-    setInitialPayment(0);
-    setSelectedCategoryId('');
-    setSelectedShippingItemId('');
-    setAddWeight(1);
-    setAddQty(1);
   };
 
   const filteredShipments = shipments.filter((s) => {
@@ -408,13 +430,13 @@ export default function Shipments() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-white/70">{shipment.category}</div>
-                      <div className="text-sm text-white/40">{shipment.weightKg} kg &bull; {lineItemsArr.length || shipment.quantity} items
+                      <div className="text-sm text-white/40">{shipment.weightKg > 0 ? `${shipment.weightKg} kg • ` : ''}{lineItemsArr.length || shipment.quantity} items
                         {photosArr.length > 0 && <span className="ml-2">📎{photosArr.length}</span>}
                       </div>
                       {lineItemsArr.length > 0 && (
                         <div className="text-xs text-white/30 mt-1">
                           {lineItemsArr.slice(0, 3).map((li: any) => (
-                            <span key={li.id || li.itemName}>{li.itemName} {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}{lineItemsArr.indexOf(li) < Math.min(2, lineItemsArr.length - 1) ? ', ' : ''}</span>
+                            <span key={li.id || li.itemName}>{li.itemName} {formatLineItemQty(li.weightKg, li.quantity)}{lineItemsArr.indexOf(li) < Math.min(2, lineItemsArr.length - 1) ? ', ' : ''}</span>
                           ))}
                           {lineItemsArr.length > 3 && <span> +{lineItemsArr.length - 3} more</span>}
                         </div>
@@ -422,12 +444,12 @@ export default function Shipments() {
                     </td>
                     <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-1.5">
-                        <select value={shipment.status} onChange={(e) => { updateShipmentStatus(shipment.id, e.target.value as ShipmentStatus); toast('success', `${shipment.trackingNumber} → ${e.target.value}`); }} aria-label="Update status"
+                        <select value={shipment.status} onChange={(e) => handleQuickStatusChange(shipment.id, shipment.trackingNumber, e.target.value as ShipmentStatus)} aria-label="Update status"
                           className={`px-2.5 py-1 rounded-full text-sm font-medium border-none outline-none cursor-pointer appearance-none hover:brightness-110 transition-all duration-200 ${getStatusColor(shipment.status)}`}>
                           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
-                          <button onClick={() => { updateShipmentStatus(shipment.id, 'Delivered'); toast('success', `${shipment.trackingNumber} marked Delivered`); }}
+                          <button onClick={() => handleQuickStatusChange(shipment.id, shipment.trackingNumber, 'Delivered')}
                             className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl hover:from-emerald-500 hover:to-emerald-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-emerald-500/30">
                             {t('Mark Delivered')}
                           </button>
@@ -503,7 +525,7 @@ export default function Shipments() {
                   <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider mb-3">{t('Line Items')}</h3>
 
                   {/* Add item row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPerKg ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 mb-3`}>
                     <div>
                       <label className="block text-xs text-white/40 mb-1">{t('Category')}</label>
                       <select value={selectedCategoryId} onChange={(e) => setSelectedCategoryId(e.target.value)} className={modalInput}>
@@ -520,13 +542,15 @@ export default function Shipments() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">{t('Weight (kg)')}</label>
-                      <input type="number" min="1" step="0.01" value={addWeight} onChange={(e) => setAddWeight(Math.max(1, Number(e.target.value) || 1))} className={modalInput} />
-                    </div>
+                    {isPerKg && (
+                      <div>
+                        <label className="block text-xs text-white/40 mb-1">{t('Weight (kg)')}</label>
+                        <input type="number" min="1" step="0.01" value={addWeight} onChange={(e) => setAddWeight(Math.max(1, Number(e.target.value) || 1))} className={modalInput} />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-xs text-white/40 mb-1">{t('Quantity')}</label>
-                      <input type="number" min="1" value={addQty} onChange={(e) => setAddQty(Math.max(1, Number(e.target.value) || 1))} className={modalInput} />
+                      <input type="number" min="0.01" step="0.01" value={addQty} onChange={(e) => setAddQty(Math.max(0.01, Number(e.target.value) || 1))} className={modalInput} />
                     </div>
                     <div className="flex items-end">
                       <button type="button" onClick={handleAddLineItem} disabled={!selectedShippingItemId} className="btn-primary w-full disabled:opacity-40">
@@ -536,7 +560,11 @@ export default function Shipments() {
                   </div>
                   {selectedItem && (
                     <div className="text-xs text-white/40 mb-3">
-                      Current: {selectedItem.item} — {routeDirection === 'retour' ? (selectedItem.retourPrice ?? selectedItem.allerPrice) : selectedItem.allerPrice} {currency}/kg &times; {addWeight} kg &times; {addQty} qty = <span className="text-emerald-400 font-semibold">{currentLineTotal.toLocaleString()} {currency}</span>
+                      {isPerKg ? (
+                        <>Current: {selectedItem.item} — {routeDirection === 'retour' ? (selectedItem.retourPrice ?? selectedItem.allerPrice) : selectedItem.allerPrice} {currency}/kg &times; {addWeight} kg &times; {addQty} qty = <span className="text-emerald-400 font-semibold">{currentLineTotal.toLocaleString()} {currency}</span></>
+                      ) : (
+                        <>Current: {selectedItem.item} — {routeDirection === 'retour' ? (selectedItem.retourPrice ?? selectedItem.allerPrice) : selectedItem.allerPrice} {currency}/item &times; {addQty} qty = <span className="text-emerald-400 font-semibold">{currentLineTotal.toLocaleString()} {currency}</span></>
+                      )}
                     </div>
                   )}
 
@@ -548,8 +576,8 @@ export default function Shipments() {
                           <div className="flex-1 min-w-0">
                             <span className="text-white/80 font-medium">{li.itemName}</span>
                             <span className="text-white/40 ml-2">
-                              — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)} {li.unitPrice.toLocaleString()} {currency}
-                              = <span className="text-emerald-400 font-semibold">{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
+                              — {formatLineItemQty(li.weightKg, li.quantity)} {li.unitPrice.toLocaleString()} {currency}
+                              = <span className="text-emerald-400 font-semibold">{(li.weightKg != null ? li.unitPrice * li.weightKg * li.quantity : li.unitPrice * li.quantity).toLocaleString()} {currency}</span>
                             </span>
                           </div>
                           <button type="button" onClick={() => handleRemoveLineItem(li.key)} className="p-1 text-white/30 hover:text-red-500 shrink-0 ml-2">
@@ -621,12 +649,12 @@ export default function Shipments() {
                     <div className="space-y-1.5 text-sm">
                       {lineItems.map((li) => (
                         <div key={li.key} className="flex justify-between text-white/60">
-                          <span>{li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}</span>
-                          <span>{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
+                          <span>{li.itemName} — {formatLineItemQty(li.weightKg, li.quantity)}</span>
+                          <span>{(li.weightKg != null ? li.unitPrice * li.weightKg * li.quantity : li.unitPrice * li.quantity).toLocaleString()} {currency}</span>
                         </div>
                       ))}
                       <div className="flex justify-between text-white/60 pt-1 border-t border-white/[0.06]">
-                          <span>{t('Subtotal')} ({totalWeight} kg)</span>
+                          <span>{t('Subtotal')}{totalWeight > 0 ? ` (${totalWeight} kg)` : ''}</span>
                         <span>{lineItemsSubtotal.toLocaleString()} {currency}</span>
                       </div>
                       {activeOffer ? (
@@ -699,7 +727,7 @@ export default function Shipments() {
               <div className="px-5 py-4 border-t border-white/[0.08] flex gap-3 shrink-0">
                 <button onClick={() => handleShareReceipt()} className="btn-secondary flex-1"><Share2 className="w-4 h-4 mr-2" /> {t('Share PDF')}</button>
                 {rc.status !== 'Delivered' && rc.status !== 'Cancelled' && (
-                  <button onClick={() => { updateShipmentStatus(rc.id, 'Delivered'); toast('success', `${rc.trackingNumber} marked Delivered`); setReceiptShipment(null); }}
+                  <button onClick={() => { handleQuickStatusChange(rc.id, rc.trackingNumber, 'Delivered'); setReceiptShipment(null); }}
                     className="btn-primary flex-1 bg-emerald-600 hover:bg-emerald-700"><CheckCircle className="w-4 h-4 mr-2" /> Mark Delivered</button>
                 )}
               </div>

@@ -2,8 +2,8 @@
 
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useShipments, useCustomers, useOffers, useSettings, useAppConfig, useExpenses } from '@/lib/swr';
-import { Package, TrendingUp, DollarSign, Clock, Trophy, ArrowUpRight, ArrowDownRight, Receipt, Zap } from 'lucide-react';
+import { useShipments, useCustomers, useOffers, useSettings, useAppConfig, useExpenses, useShippingItems, useStaff } from '@/lib/swr';
+import { Package, TrendingUp, DollarSign, Clock, Trophy, ArrowUpRight, ArrowDownRight, Receipt, Zap, Users, Tag, UserPlus } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -16,18 +16,7 @@ import {
 } from 'recharts';
 import type { ComponentType } from 'react';
 import { useT } from '@/lib/i18n';
-
-function calculateFinancials(shipments: any[], expenses: any[], settings: any, config: any) {
-  const currency = settings?.currency || config?.defaults?.currency || 'MGA';
-  const totalRevenue = shipments
-    .reduce((sum, s) => {
-      const amount = s.finalAmount ?? s.basePrice ?? (s.weightKg * (settings?.defaultRatePerKg || 0));
-      return sum + (s.paymentStatus === 'Paid' ? amount : (s.initialPayment || 0));
-    }, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const netProfit = totalRevenue - totalExpenses;
-  return { totalRevenue, totalExpenses, netProfit, currency };
-}
+import { calculateFinancials } from '@/lib/financials';
 
 function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
@@ -61,6 +50,8 @@ export default function Dashboard() {
   const { offers } = useOffers();
   const { settings, loading: settingsLoading } = useSettings();
   const { expenses, loading: expensesLoading } = useExpenses();
+  const { shippingItems } = useShippingItems();
+  const { staff } = useStaff();
   const { config } = useAppConfig();
 
   const today = new Date().toISOString().split('T')[0];
@@ -106,6 +97,12 @@ export default function Dashboard() {
     shipments.forEach(s => { m[s.status] = (m[s.status] || 0) + 1; });
     return Object.entries(m).map(([name, count]) => ({ name, count }));
   }, [shipments]);
+
+  const totalCustomers = customers.length;
+  const activeCustomers = customers.filter((c) => c.active).length;
+  const totalItems = shippingItems.length;
+  const totalStaff = staff.length;
+  const activeStaff = staff.filter((s: any) => s.active).length;
 
   if (shipmentsLoading || customersLoading || settingsLoading || expensesLoading) {
     return (
@@ -184,6 +181,30 @@ export default function Dashboard() {
           delay="stagger-4"
           pulseDot
         />
+      </div>
+
+      {/* Totals row — customers, shipments, items, staff */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
+        <button onClick={() => router.push('/customers')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
+          <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Users className="w-4 h-4 text-cyan-400" /> {t('Total Customers')}</div>
+          <div className="font-display text-3xl font-bold text-white">{totalCustomers}</div>
+          <div className="text-sm text-white/25 mt-1">{activeCustomers} {t('active')}</div>
+        </button>
+        <button onClick={() => router.push('/shipments')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
+          <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Package className="w-4 h-4 text-pink-400" /> {t('Total Shipments')}</div>
+          <div className="font-display text-3xl font-bold text-white">{totalShipments}</div>
+          <div className="text-sm text-white/25 mt-1">{pendingDeliveries} {t('pending')}</div>
+        </button>
+        <button onClick={() => router.push('/categories')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
+          <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Tag className="w-4 h-4 text-emerald-400" /> {t('Total Items')}</div>
+          <div className="font-display text-3xl font-bold text-white">{totalItems}</div>
+          <div className="text-sm text-white/25 mt-1">{t('shipping items')}</div>
+        </button>
+        <button onClick={() => router.push('/staff')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
+          <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><UserPlus className="w-4 h-4 text-amber-400" /> {t('Total Staff')}</div>
+          <div className="font-display text-3xl font-bold text-white">{totalStaff}</div>
+          <div className="text-sm text-white/25 mt-1">{activeStaff} {t('active')}</div>
+        </button>
       </div>
 
       {/* Charts Row */}

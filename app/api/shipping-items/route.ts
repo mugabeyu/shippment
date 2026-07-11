@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ const mapItem = (row: any) => ({
   id: row.id,
   categoryId: row.category_id,
   categoryName: row.category?.name ?? row.category_name ?? null,
+  categoryPricingMode: row.category?.pricing_mode || 'per_item',
   item: row.item,
   allerPrice: row.aller_price ?? 0,
   retourPrice: row.retour_price ?? null,
@@ -20,7 +22,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase()
       .from('shipping_items')
-      .select('*, category:categories(name)')
+      .select('*, category:categories(name, pricing_mode)')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json((data || []).map(mapItem));
@@ -31,6 +33,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { categoryId, item, allerPrice, retourPrice } = await req.json();
     if (!categoryId || !item) {
       return NextResponse.json({ error: 'Category and item name are required' }, { status: 400 });

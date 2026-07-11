@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase, getAdminSupabase } from '@/lib/supabase/server';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,9 @@ const adminSupabase = () => getAdminSupabase();
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { id } = await params;
     const { data: staff, error: staffError } = await supabase()
       .from('staff')

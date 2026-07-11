@@ -63,6 +63,8 @@ export default function ShipmentDetail() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [forceStatus, setForceStatus] = useState('');
+  const [confirmForceStatus, setConfirmForceStatus] = useState(false);
 
   const isLoading = shipmentsLoading || settingsLoading;
 
@@ -104,6 +106,13 @@ export default function ShipmentDetail() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleForceStatus = async () => {
+    if (!forceStatus) return;
+    await handleStatusChange(forceStatus);
+    setConfirmForceStatus(false);
+    setForceStatus('');
   };
 
   const handlePDF = async () => {
@@ -189,11 +198,9 @@ export default function ShipmentDetail() {
           </button>
           {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
             <button
-              onClick={() => {
-                updateShipmentStatus(shipment.id, 'Delivered');
-                toast('success', `${shipment.trackingNumber} marked Delivered ✓`);
-              }}
-              className="px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl hover:from-emerald-500 hover:to-emerald-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+              onClick={() => handleStatusChange('Delivered')}
+              disabled={isUpdating}
+              className="px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl hover:from-emerald-500 hover:to-emerald-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-emerald-500/30 flex items-center gap-2 disabled:opacity-50">
               <CheckCircle className="w-4 h-4" /> {t('Mark Delivered')}
             </button>
           )}
@@ -256,17 +263,19 @@ export default function ShipmentDetail() {
                 <div className="bg-[#1A1C24] border border-white/[0.06] rounded-xl p-3 space-y-2">
                   {lineItems.length > 0 ? lineItems.map((li: any, idx: number) => (
                     <div key={li.id || idx} className="flex justify-between text-sm text-white/80">
-                      <span>{li.itemName} — {formatLineItemQty(li.itemName, li.weightKg, li.quantity)}</span>
-                      <span className="text-white/50">{(li.unitPrice * li.weightKg * li.quantity).toLocaleString()} {currency}</span>
+                      <span>{li.itemName} — {formatLineItemQty(li.weightKg, li.quantity)}</span>
+                      <span className="text-white/50">{li.lineTotal.toLocaleString()} {currency}</span>
                     </div>
                   )) : (
                     <div className="text-sm text-white/80">
                       {shipment.category} — {shipment.weightKg} kg &times; {shipment.quantity} items
                     </div>
                   )}
-                  <div className="text-sm text-white/50 pt-1 border-t border-white/[0.06]">
-                    Total: {lineItems.length > 0 ? lineItems.reduce((s: number, li: any) => s + li.weightKg * li.quantity, 0) : shipment.weightKg} kg
-                  </div>
+                  {(lineItems.length > 0 ? lineItems.reduce((s: number, li: any) => s + (li.weightKg != null ? li.weightKg * li.quantity : 0), 0) : shipment.weightKg) > 0 && (
+                    <div className="text-sm text-white/50 pt-1 border-t border-white/[0.06]">
+                      Total: {lineItems.length > 0 ? lineItems.reduce((s: number, li: any) => s + (li.weightKg != null ? li.weightKg * li.quantity : 0), 0) : shipment.weightKg} kg
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -413,6 +422,33 @@ export default function ShipmentDetail() {
             <Trash2 className="w-4 h-4" /> {t('Delete Shipment')}
           </button>
         )}
+
+        <div className="mt-5 pt-5 border-t border-red-500/10">
+          <h4 className="text-sm font-semibold text-red-400 mb-1">{t('Change Shipment Status')}</h4>
+          <p className="text-sm text-white/40 mb-4">{t('Force this shipment to any status, including Cancelled. Use with care.')}</p>
+          {confirmForceStatus ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <select value={forceStatus} onChange={(e) => setForceStatus(e.target.value)} className="input-field w-auto">
+                {(config?.shipment_statuses || []).map((s: string) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <button
+                onClick={handleForceStatus}
+                disabled={isUpdating || !forceStatus}
+                className="px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-500 hover:to-red-400 transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-red-500/30 disabled:opacity-50">
+                {t('Confirm')}
+              </button>
+              <button onClick={() => { setConfirmForceStatus(false); setForceStatus(''); }} disabled={isUpdating} className="px-4 py-2.5 text-sm text-white/40 hover:text-white transition-colors rounded-xl">
+                {t('Cancel')}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setForceStatus(shipment.status); setConfirmForceStatus(true); }}
+              className="px-4 py-2.5 text-sm font-bold border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 hover:text-red-300 hover:scale-[1.02] transition-all duration-200">
+              {t('Change Shipment Status')}
+            </button>
+          )}
+        </div>
       </div>
 
       {showReceipt && shipment && (() => {
@@ -438,12 +474,9 @@ export default function ShipmentDetail() {
                 </button>
                 {shipment.status !== 'Delivered' && shipment.status !== 'Cancelled' && (
                   <button
-                    onClick={() => {
-                      updateShipmentStatus(shipment.id, 'Delivered');
-                      toast('success', `${shipment.trackingNumber} marked Delivered ✓`);
-                      setShowReceipt(false);
-                    }}
-                    className="btn-primary flex-1 bg-emerald-600 hover:bg-emerald-700">
+                    onClick={() => { handleStatusChange('Delivered'); setShowReceipt(false); }}
+                    disabled={isUpdating}
+                    className="btn-primary flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
                     <CheckCircle className="w-4 h-4 mr-2" /> Mark Delivered
                   </button>
                 )}

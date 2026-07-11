@@ -11,7 +11,8 @@ const EMPTY_CAT: Category = {
   name: '',
   description: '',
   handlingNotes: '',
-  pricePerKg: 0
+  pricePerKg: 0,
+  pricingMode: 'per_item'
 };
 
 export default function Categories() {
@@ -53,6 +54,9 @@ export default function Categories() {
     });
   };
 
+  const addItemIsPerKg = categories.find((c) => c.id === itemModalCategoryId)?.pricingMode === 'per_kg';
+  const editItemIsPerKg = editItemDraft ? categories.find((c) => c.id === editItemDraft.categoryId)?.pricingMode === 'per_kg' : false;
+
   // --- Category CRUD ---
   const openNewCat = () => { setCatDraft(EMPTY_CAT); setCatModal(true); };
   const openEditCat = (c: Category) => { setCatDraft(c); setCatModal(true); };
@@ -63,7 +67,7 @@ export default function Categories() {
         await updateCategory(catDraft.id, catDraft);
         toast('success', `${catDraft.name} updated`);
       } else {
-        await addCategory({ name: catDraft.name, description: catDraft.description, handlingNotes: catDraft.handlingNotes, pricePerKg: 0 });
+        await addCategory({ name: catDraft.name, description: catDraft.description, handlingNotes: catDraft.handlingNotes, pricePerKg: 0, pricingMode: catDraft.pricingMode || 'per_item' });
         toast('success', `${catDraft.name} created`);
       }
       setCatModal(false);
@@ -163,7 +167,12 @@ export default function Categories() {
                       {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </span>
                     <div className="min-w-0">
-                      <h3 className="text-base font-semibold text-white/90">{cat.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-white/90">{cat.name}</h3>
+                        {cat.pricingMode === 'per_kg' && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{t('Billed per kg')}</span>
+                        )}
+                      </div>
                       <p className="text-xs text-white/40 mt-0.5">
                         {items.length} {items.length !== 1 ? t('items') : t('item')}
                         {cat.description ? ` — ${cat.description}` : ''}
@@ -191,9 +200,9 @@ export default function Categories() {
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-white/90 block truncate">{it.item}</span>
                             <div className="flex gap-3 mt-1 text-xs">
-                              <span className="text-emerald-400">{t('Aller')}: {it.allerPrice.toLocaleString()} {currency}</span>
+                              <span className="text-emerald-400">{t('Aller')}: {it.allerPrice.toLocaleString()} {currency}{cat.pricingMode === 'per_kg' ? '/kg' : ''}</span>
                               <span className="text-amber-400">
-                                {t('Retour')}: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} ${currency}` : '—'}
+                                {t('Retour')}: {it.retourPrice != null ? `${it.retourPrice.toLocaleString()} ${currency}${cat.pricingMode === 'per_kg' ? '/kg' : ''}` : '—'}
                               </span>
                             </div>
                           </div>
@@ -228,6 +237,18 @@ export default function Categories() {
               <label className="block text-sm font-medium uppercase tracking-wider text-white/60 mb-1">{t('Description')}</label>
               <textarea rows={2} value={catDraft.description} onChange={(e) => setCatDraft({ ...catDraft, description: e.target.value })} className="input-field resize-none" />
             </div>
+            <label className="flex items-start gap-3 p-3 bg-white/[0.03] border border-white/[0.06] rounded-xl cursor-pointer">
+              <input
+                type="checkbox"
+                checked={catDraft.pricingMode === 'per_kg'}
+                onChange={(e) => setCatDraft({ ...catDraft, pricingMode: e.target.checked ? 'per_kg' : 'per_item' })}
+                className="w-4 h-4 mt-0.5 rounded border-white/[0.15] text-amber-500 focus:ring-amber-500 focus:ring-offset-white bg-white/[0.03]"
+              />
+              <span>
+                <span className="block text-sm text-white/80">{t('Billed by weight (kg)')}</span>
+                <span className="block text-xs text-white/40 mt-0.5">{t('Items in this category are priced per kilogram instead of per item, and only this category feeds the Offers loyalty milestones.')}</span>
+              </span>
+            </label>
             <div className="pt-4 flex justify-end space-x-3">
               <button type="button" onClick={() => setCatModal(false)} className="px-4 py-2 text-white/40 hover:text-white/90 transition-colors">{t('Cancel')}</button>
               <button type="submit" className="btn-primary">{catDraft.id ? t('Save Changes') : t('Create Category')}</button>
@@ -252,12 +273,12 @@ export default function Categories() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}{addItemIsPerKg ? '/kg' : ''}</label>
                 <input required type="number" min="0" value={newItem.allerPrice} onChange={(e) => setNewItem({ ...newItem, allerPrice: e.target.value })} className="input-field" placeholder="500" />
                 <p className="text-xs text-white/30 mt-1">{t('Madagascar → Mauritius')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}{addItemIsPerKg ? '/kg' : ''}</label>
                 <input type="number" min="0" value={newItem.retourPrice} onChange={(e) => setNewItem({ ...newItem, retourPrice: e.target.value })} className="input-field" placeholder={t('Leave empty if N/A')} />
                 <p className="text-xs text-white/30 mt-1">{t('Mauritius → Madagascar')}</p>
               </div>
@@ -282,13 +303,13 @@ export default function Categories() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-emerald-400 mb-1">{t('Prix Aller (Rs)')}{editItemIsPerKg ? '/kg' : ''}</label>
                 <input required type="number" min="0" value={editItemDraft.allerPrice}
                   onChange={(e) => setEditItemDraft({ ...editItemDraft, allerPrice: Number(e.target.value) })} className="input-field" />
                 <p className="text-xs text-white/30 mt-1">{t('Madagascar → Mauritius')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}</label>
+                <label className="block text-sm font-medium uppercase tracking-wider text-amber-400 mb-1">{t('Prix Retour (Rs)')}{editItemIsPerKg ? '/kg' : ''}</label>
                 <input type="number" min="0" value={editItemDraft.retourPrice ?? ''}
                   onChange={(e) => setEditItemDraft({ ...editItemDraft, retourPrice: e.target.value ? Number(e.target.value) : null })} className="input-field" placeholder={t('Leave empty if N/A')} />
                 <p className="text-xs text-white/30 mt-1">{t('Mauritius → Madagascar')}</p>

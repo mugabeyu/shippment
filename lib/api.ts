@@ -142,6 +142,11 @@ export const api = {
   createShippingItem: (data: { categoryId: string; item: string; allerPrice: number; retourPrice: number | null }) => request<any>('/shipping-items', { method: 'POST', body: JSON.stringify(data) }),
   updateShippingItem: (id: string, data: any) => request<any>(`/shipping-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteShippingItem: (id: string) => request<any>(`/shipping-items/${id}`, { method: 'DELETE' }),
+
+  // Work Sessions
+  getWorkSessions: () => request<any[]>('/work-sessions'),
+  startWorkSession: () => request<any>('/work-sessions', { method: 'POST' }),
+  endWorkSession: () => request<any>('/work-sessions/end', { method: 'POST' }),
 };
 
   // Config

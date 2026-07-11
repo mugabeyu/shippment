@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { name, targetKg, rewardKg, discountPercent, discountAmount, active } = await req.json();
     const { data, error } = await supabase()
       .from('offers')

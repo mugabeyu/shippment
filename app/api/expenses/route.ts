@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { requireActiveWorkSession } from '@/lib/workSession';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,8 @@ function mapExpense(row: any) {
     amount: row.amount,
     note: row.note ?? '',
     attachmentUrl: row.attachment_url ?? null,
+    createdBy: row.created_by ?? null,
+    workSessionId: row.work_session_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -35,10 +38,21 @@ function mapExpense(row: any) {
 
 export async function POST(req: NextRequest) {
   try {
+    const gate = await requireActiveWorkSession(req);
+    if (gate instanceof NextResponse) return gate;
+
     const { date, category, amount, note, attachmentUrl } = await req.json();
     const { data, error } = await supabase()
       .from('expenses')
-      .insert([{ date: date || new Date().toISOString().split('T')[0], category, amount, note: note || '', attachment_url: attachmentUrl || null }])
+      .insert([{
+        date: date || new Date().toISOString().split('T')[0],
+        category,
+        amount,
+        note: note || '',
+        attachment_url: attachmentUrl || null,
+        created_by: gate.staff.id,
+        work_session_id: gate.session.id
+      }])
       .select()
       .single();
 
