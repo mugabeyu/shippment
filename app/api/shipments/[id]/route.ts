@@ -37,6 +37,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } = body;
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
 
+    // Delivery or an explicit Paid mark both mean the balance is settled —
+    // keep payment_status/initial_payment consistent regardless of which
+    // field triggered it, so revenue/balance figures never lag behind.
+    const isPaid = paymentStatus === 'Paid' || status === 'Delivered';
+    let initialPaymentUpdate: number | undefined;
+    if (isPaid) {
+      const { data: existing, error: fetchError } = await supabase()
+        .from('shipments')
+        .select('final_amount, initial_payment')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+      if ((existing.initial_payment ?? 0) < (existing.final_amount ?? 0)) {
+        initialPaymentUpdate = existing.final_amount;
+      }
+    }
+
     const { data, error } = await supabase()
       .from('shipments')
       .update({
@@ -49,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         description,
         status,
         date,
-        payment_status: paymentStatus,
+        payment_status: isPaid ? 'Paid' : paymentStatus,
         payment_method: paymentMethod,
         receipt_sent: receiptSent,
         pickup_date: pickupDate || null,
@@ -58,6 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         special_instructions: specialInstructions || '',
         internal_notes: internalNotes || '',
         photos: normalizedPhotos,
+        ...(initialPaymentUpdate !== undefined ? { initial_payment: initialPaymentUpdate } : {}),
         updated_at: new Date()
       })
       .eq('id', id)

@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadCSV } from '@/lib/exports';
 import { useT } from '@/lib/i18n';
+import { calculateFinancials } from '@/lib/financials';
 
 const ICON_MAP: Record<string, React.ComponentType<{className?: string}>> = {
   Package, Users, Gift
@@ -29,7 +30,6 @@ export default function Reports() {
   const activeOffer = offers.find((o) => o.active) ?? offers[0];
   const target = activeOffer?.targetKg ?? config?.defaults?.loyaltyTargetKg ?? 25;
   const currency = settings?.currency || config?.defaults?.currency || 'MGA';
-  const defaultValue = config?.defaults?.defaultRatePerKg || 0;
 
   const filteredShipments = useMemo(
     () =>
@@ -52,7 +52,7 @@ export default function Reports() {
         summary: [
           { label: t('Shipments'), value: filteredShipments.length },
           { label: t('Total KG'), value: filteredShipments.reduce((a, s) => a + s.weightKg, 0) },
-          { label: `${t('Revenue')} (${currency})`, value: filteredShipments.reduce((a, s) => a + s.weightKg * (settings?.defaultRatePerKg || defaultValue), 0).toLocaleString() }
+          { label: `${t('Revenue')} (${currency})`, value: calculateFinancials(filteredShipments, [], settings, config).totalRevenue.toLocaleString() }
         ]
       };
     }
@@ -71,7 +71,7 @@ export default function Reports() {
       rows: [],
       summary: []
     };
-  }, [type, filteredShipments, customers, settings]);
+  }, [type, filteredShipments, customers, settings, config]);
 
   const exportCSV = () => downloadCSV(`${type}-report.csv`, [headers, ...rows]);
   const exportPDF = () => {

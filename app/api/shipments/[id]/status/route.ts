@@ -15,9 +15,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const { status } = await req.json();
+
+    const updatePayload: Record<string, any> = { status, updated_at: new Date() };
+
+    // Delivery implies the customer has settled up: flip payment_status to
+    // Paid and clear any outstanding balance so revenue/balance figures
+    // don't lag behind the delivered state.
+    if (status === 'Delivered') {
+      const { data: existing, error: fetchError } = await supabase()
+        .from('shipments')
+        .select('final_amount, initial_payment')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      updatePayload.payment_status = 'Paid';
+      if ((existing.initial_payment ?? 0) < (existing.final_amount ?? 0)) {
+        updatePayload.initial_payment = existing.final_amount;
+      }
+    }
+
     const { data, error } = await supabase()
       .from('shipments')
-      .update({ status, updated_at: new Date() })
+      .update(updatePayload)
       .eq('id', id)
       .select('*, customer:customers(*)')
       .single();
@@ -25,7 +45,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     logAudit(req, 'shipment_status_changed', {
       id: data.id,
       trackingNumber: data.tracking_number,
-      status
+      status,
+      paymentStatus: data.payment_status
     });
     return NextResponse.json(mapShipment(data));
   } catch (error: any) {
