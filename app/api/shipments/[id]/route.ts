@@ -37,12 +37,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } = body;
     const normalizedPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
 
-    const { data: oldShipment } = await supabase()
-      .from('shipments')
-      .select('weight_kg, customer_id')
-      .eq('id', id)
-      .single();
-
     const { data, error } = await supabase()
       .from('shipments')
       .update({
@@ -80,30 +74,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       changes: Object.keys(body)
     });
 
-    if (oldShipment && customerId !== oldShipment.customer_id) {
-      const { data: oldCustomer } = await supabase()
-        .from('customers')
-        .select('total_kg_sent')
-        .eq('id', oldShipment.customer_id)
-        .single();
-      if (oldCustomer) {
-        await supabase()
-          .from('customers')
-          .update({ total_kg_sent: Math.max(0, (oldCustomer.total_kg_sent || 0) - (oldShipment.weight_kg || 0)) })
-          .eq('id', oldShipment.customer_id);
-      }
-      const { data: newCustomer } = await supabase()
-        .from('customers')
-        .select('total_kg_sent')
-        .eq('id', customerId)
-        .single();
-      if (newCustomer) {
-        await supabase()
-          .from('customers')
-          .update({ total_kg_sent: (newCustomer.total_kg_sent || 0) + weightKg })
-          .eq('id', customerId);
-      }
-    }
+    // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
+    // table (sync_customer_total_kg), which recomputes both the old and new
+    // customer's totals whenever weight_kg or customer_id changes.
 
     return NextResponse.json(mapShipment(data));
   } catch (error: any) {
@@ -136,19 +109,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       weightKg: shipment?.weight_kg
     });
 
-    if (shipment) {
-      const { data: customer } = await supabase()
-        .from('customers')
-        .select('total_kg_sent')
-        .eq('id', shipment.customer_id)
-        .single();
-      if (customer) {
-        await supabase()
-          .from('customers')
-          .update({ total_kg_sent: Math.max(0, (customer.total_kg_sent || 0) - (shipment.weight_kg || 0)) })
-          .eq('id', shipment.customer_id);
-      }
-    }
+    // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
+    // table (sync_customer_total_kg), so no manual decrement is needed here.
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -219,11 +219,8 @@ export async function POST(req: NextRequest) {
       totalWeight
     });
 
-    // We already have the customer's prior total_kg_sent (fetched up front) and the
-    // computed new total, so just write it — no need to re-read it first.
-    if (customerId && customer) {
-      await supabase().from('customers').update({ total_kg_sent: newKg }).eq('id', customerId);
-    }
+    // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
+    // table (sync_customer_total_kg), so no manual write is needed here.
 
     // Build the response from data we already have in hand (the insert above already
     // returned the full shipment row, and the line-items insert returns its rows too)
