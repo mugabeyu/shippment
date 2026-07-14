@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
       initialPayment
     } = body;
 
+    console.log('[DEBUG shipments POST] photos received:', JSON.stringify(photos), 'lineItems count:', Array.isArray(lineItems) ? lineItems.length : lineItems);
+
     // Validate line items
     if (!lineItems || !Array.isArray(lineItems) || lineItems.length === 0) {
       return NextResponse.json({ error: 'At least one line item is required' }, { status: 400 });
@@ -231,8 +233,11 @@ export async function POST(req: NextRequest) {
       shipment_line_items: insertedLineItems || []
     };
 
+    console.log('[DEBUG shipments POST] inserted shipment photos:', JSON.stringify(shipment.photos));
+
     return NextResponse.json(mapShipment(created), { status: 201 });
   } catch (error: any) {
+    console.error('[DEBUG shipments POST] error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -55,6 +55,7 @@ export default function ShipmentDetail() {
 
   const shipment = shipments.find((s) => s.id === id);
   const lineItems = shipment?.lineItems || [];
+  const photos = shipment?.photos || [];
   const currency = settings?.currency || 'MGA';
   const customer = shipment ? customers.find((c) => c.id === shipment.customerId) : undefined;
   const [isUpdating, setIsUpdating] = useState(false);
@@ -65,6 +66,7 @@ export default function ShipmentDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [forceStatus, setForceStatus] = useState('');
   const [confirmForceStatus, setConfirmForceStatus] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
 
   const isLoading = shipmentsLoading || settingsLoading;
 
@@ -298,6 +300,24 @@ export default function ShipmentDetail() {
               )}
             </div>
           </div>
+
+          {photos.length > 0 && (
+            <div className="card p-6">
+              <h3 className="text-base font-semibold text-white/90 mb-4">{t('Attachments')} ({photos.length})</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {photos.map((url: string, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setPreviewPhoto(url)}
+                    className="aspect-square rounded-xl overflow-hidden border border-white/[0.06] bg-[#1A1C24] hover:border-primary/40 transition-colors"
+                  >
+                    <img src={url} alt={`${t('Attachment')} ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-5">
@@ -485,6 +505,15 @@ export default function ShipmentDetail() {
           </div>
         );
       })()}
+
+      {previewPhoto && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPreviewPhoto(null)}>
+          <button onClick={() => setPreviewPhoto(null)} className="absolute top-4 right-4 text-white/60 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={previewPhoto} alt={t('Attachment')} className="max-w-full max-h-full rounded-2xl shadow-2xl shadow-black/60" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
