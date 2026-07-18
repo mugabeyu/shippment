@@ -173,9 +173,17 @@ export interface Expense {
   category: string;
   amount: number;
   note: string;
-  attachmentUrl?: string;
+  photos?: string[];
   createdBy?: string | null;
   workSessionId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  description: string;
   createdAt?: string;
   updatedAt?: string;
 }

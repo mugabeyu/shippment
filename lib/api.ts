@@ -132,6 +132,12 @@ export const api = {
   updateExpense: (id: string, data: any) => request<any>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExpense: (id: string) => request<any>(`/expenses/${id}`, { method: 'DELETE' }),
 
+  // Expense Categories
+  getExpenseCategories: () => request<any[]>('/expense-categories'),
+  createExpenseCategory: (data: any) => request<any>('/expense-categories', { method: 'POST', body: JSON.stringify(data) }),
+  updateExpenseCategory: (id: string, data: any) => request<any>(`/expense-categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteExpenseCategory: (id: string) => request<any>(`/expense-categories/${id}`, { method: 'DELETE' }),
+
   // Config
   getConfig: () => request<Record<string, any>>('/config'),
   getConfigKey: (key: string) => request<{ key: string; value: any }>(`/config/${encodeURIComponent(key)}`),

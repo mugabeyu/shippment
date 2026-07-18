@@ -54,6 +54,19 @@ const TEMPLATES: Record<string, Tpl> = {
     fr: () => `Dépense supprimée`,
   },
 
+  expense_category_created: {
+    en: (d) => `Created expense category ${v(d.name)}`,
+    fr: (d) => `Catégorie de dépense ${v(d.name)} créée`,
+  },
+  expense_category_updated: {
+    en: (d) => `Updated expense category ${v(d.name)}`,
+    fr: (d) => `Catégorie de dépense ${v(d.name)} mise à jour`,
+  },
+  expense_category_deleted: {
+    en: () => `Deleted an expense category`,
+    fr: () => `Catégorie de dépense supprimée`,
+  },
+
   customer_created: {
     en: (d) => `Added customer ${v(d.name)}${d.phone ? ` (${v(d.phone)})` : ''}`,
     fr: (d) => `Client ${v(d.name)} ajouté${d.phone ? ` (${v(d.phone)})` : ''}`,
@@ -185,6 +198,9 @@ const FR_LABELS: Record<string, string> = {
   expense_created: 'Dépense créée',
   expense_updated: 'Dépense mise à jour',
   expense_deleted: 'Dépense supprimée',
+  expense_category_created: 'Catégorie de dépense créée',
+  expense_category_updated: 'Catégorie de dépense mise à jour',
+  expense_category_deleted: 'Catégorie de dépense supprimée',
   customer_created: 'Client ajouté',
   customer_updated: 'Client mis à jour',
   category_created: 'Catégorie créée',

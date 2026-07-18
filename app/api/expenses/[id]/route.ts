@@ -14,7 +14,7 @@ function mapExpense(row: any) {
     category: row.category,
     amount: row.amount,
     note: row.note ?? '',
-    attachmentUrl: row.attachment_url ?? null,
+    photos: row.photos ?? [],
     createdBy: row.created_by ?? null,
     workSessionId: row.work_session_id ?? null,
     createdAt: row.created_at,
@@ -43,10 +43,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (gate instanceof NextResponse) return gate;
 
     const { id } = await params;
-    const { date, category, amount, note, attachmentUrl } = await req.json();
+    const { date, category, amount, note, photos } = await req.json();
     const { data, error } = await supabase()
       .from('expenses')
-      .update({ date, category, amount, note: note || '', attachment_url: attachmentUrl || null, updated_at: new Date() })
+      .update({ date, category, amount, note: note || '', photos: Array.isArray(photos) ? photos.slice(0, 3) : [], updated_at: new Date() })
       .eq('id', id)
       .select()
       .single();

@@ -27,7 +27,7 @@ const fetcher = (key: [string, ...any[]]) => {
   }
 };
 
-export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route, ShippingItem, ShipmentLineItem, Expense } from './store';
+export type { Customer, Staff, Shipment, Category, Offer, Settings, ShipmentStatus, Route, ShippingItem, ShipmentLineItem, Expense, ExpenseCategory } from './store';
 
 let configCache: Record<string, any> | null = null;
 
@@ -271,6 +271,28 @@ export function useExpenses() {
   }, [mutate]);
 
   return { expenses, loading: isLoading, error: error?.message, reload: () => mutate(), addExpense, updateExpense, deleteExpense };
+}
+
+export function useExpenseCategories() {
+  const { data, error, isLoading, mutate } = useSWR('expense-categories', () => api.getExpenseCategories());
+  const expenseCategories = data ?? [];
+
+  const addExpenseCategory = useCallback(async (data: any) => {
+    const created = await api.createExpenseCategory(data);
+    mutate((prev) => [...(prev ?? []), created], false);
+    return created;
+  }, [mutate]);
+  const updateExpenseCategory = useCallback(async (id: string, data: any) => {
+    const updated = await api.updateExpenseCategory(id, data);
+    mutate((prev) => (prev ?? []).map((c: any) => (c.id === id ? updated : c)), false);
+    return updated;
+  }, [mutate]);
+  const deleteExpenseCategory = useCallback(async (id: string) => {
+    await api.deleteExpenseCategory(id);
+    mutate((prev) => (prev ?? []).filter((c: any) => c.id !== id), false);
+  }, [mutate]);
+
+  return { expenseCategories, loading: isLoading, error: error?.message, reload: () => mutate(), addExpenseCategory, updateExpenseCategory, deleteExpenseCategory };
 }
 
 export function useRoutes() {

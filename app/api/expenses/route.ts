@@ -28,7 +28,7 @@ function mapExpense(row: any) {
     category: row.category,
     amount: row.amount,
     note: row.note ?? '',
-    attachmentUrl: row.attachment_url ?? null,
+    photos: row.photos ?? [],
     createdBy: row.created_by ?? null,
     workSessionId: row.work_session_id ?? null,
     createdAt: row.created_at,
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireActiveWorkSession(req);
     if (gate instanceof NextResponse) return gate;
 
-    const { date, category, amount, note, attachmentUrl } = await req.json();
+    const { date, category, amount, note, photos } = await req.json();
     const { data, error } = await supabase()
       .from('expenses')
       .insert([{
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         category,
         amount,
         note: note || '',
-        attachment_url: attachmentUrl || null,
+        photos: Array.isArray(photos) ? photos.slice(0, 3) : [],
         created_by: gate.staff.id,
         work_session_id: gate.session.id
       }])
