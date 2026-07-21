@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'offer_created', { name, discountPercent, discountAmount, active });
+    logAudit(req, 'offer_created', { name, discountPercent, discountAmount, active }, gate.staff);
     return NextResponse.json(mapOffer(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

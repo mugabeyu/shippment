@@ -36,24 +36,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: existing } = await supabase()
-      .from('staff_work_sessions')
-      .select('id')
-      .eq('staff_id', staff.id)
-      .is('ended_at', null)
-      .maybeSingle();
-    if (existing) {
-      return NextResponse.json({ error: 'You already have a work session in progress.' }, { status: 409 });
-    }
-
+    // No pre-check SELECT: idx_work_sessions_one_open_per_staff (a partial
+    // unique index on staff_id WHERE ended_at IS NULL) already enforces
+    // "one open session per staff" at the DB level, so we can go straight to
+    // the insert and only pay for a second round trip on the rare conflict.
     const { data, error } = await supabase()
       .from('staff_work_sessions')
       .insert([{ staff_id: staff.id }])
       .select('*, staff:staff(name, email)')
       .single();
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') {
+        return NextResponse.json({ error: 'You already have a work session in progress.' }, { status: 409 });
+      }
+      throw error;
+    }
 
-    logAudit(req, 'work_session_started', { staffId: staff.id });
+    logAudit(req, 'work_session_started', { staffId: staff.id }, staff);
     return NextResponse.json(mapSession(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'customer_updated', { id, name: body.name, phone: body.phone, email: body.email, active: body.active });
+    logAudit(req, 'customer_updated', { id, name: body.name, phone: body.phone, email: body.email, active: body.active }, gate.staff);
     return NextResponse.json(data);
   } catch (error: any) {
     const { message, status } = friendlyDbError(error);

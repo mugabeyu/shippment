@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'category_created', { name, pricePerKg, pricingMode });
+    logAudit(req, 'category_created', { name, pricePerKg, pricingMode }, gate.staff);
     return NextResponse.json(mapCategory(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

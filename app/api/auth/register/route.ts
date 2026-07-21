@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: staffError.message || 'Failed to create staff record' }, { status: 500 });
     }
 
-    logAudit(req, 'staff_self_registered', { email, role: 'Staff', staffId: staff.id });
+    logAudit(req, 'staff_self_registered', { email, role: 'Staff', staffId: staff.id }, staff);
 
     return NextResponse.json({ ...staff, message: 'Registration successful. Your account is pending approval.' }, { status: 201 });
   } catch (error: any) {

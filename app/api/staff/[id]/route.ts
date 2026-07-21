@@ -121,7 +121,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (staff?.auth_uid) {
       await adminSupabase().auth.admin.deleteUser(staff.auth_uid);
     }
-    logAudit(req, 'staff_deleted', { id, email: staff?.email });
+    logAudit(req, 'staff_deleted', { id, email: staff?.email }, gate.staff);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

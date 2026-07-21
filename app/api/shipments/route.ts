@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
       status: shipment.status,
       lineItems: lineItemInserts.length,
       totalWeight
-    });
+    }, gate.staff);
 
     // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
     // table (sync_customer_total_kg), so no manual write is needed here.

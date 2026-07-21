@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
         .eq('id', staff.id);
     }
 
-    logAudit(req, 'staff_invited', { email, role, staffId: staff.id });
+    logAudit(req, 'staff_invited', { email, role, staffId: staff.id }, gate.staff);
 
     return NextResponse.json({ ...staff, message: 'Invitation sent successfully' }, { status: 201 });
   } catch (error: any) {

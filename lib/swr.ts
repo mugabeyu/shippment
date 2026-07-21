@@ -3,7 +3,6 @@
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCallback } from 'react';
 import { api } from './api';
-import { useUiStore } from './store';
 
 const fetcher = (key: [string, ...any[]]) => {
   const [path, ...args] = key;
@@ -82,27 +81,46 @@ export function useWorkSessions() {
 // The current staff member's own work-session state — drives the topbar
 // Start/End Work toggle. Every mutating API route requires this session to be
 // open before it will accept a create/edit/delete.
+//
+// Resolved server-side from the auth cookie (staff_id), not by filtering the
+// full session list against localStorage's activeStaffEmail — that email can
+// go stale relative to the staff table (e.g. after an admin edits the
+// record), which used to make this button say "Start Work" while the server
+// still had an open session, so every click 409'd with no way to recover.
 export function useWorkSession() {
-  const { activeStaffEmail } = useUiStore();
-  const { sessions, loading, error, mutate } = useWorkSessions();
-  const mySession = sessions.find((s: any) => s.staffEmail === activeStaffEmail && !s.endedAt) ?? null;
+  const { data, error, isLoading, mutate } = useSWR('work-session-mine', () => api.getMyWorkSession());
+  const mySession = data ?? null;
 
-  // Write the server's response straight into the SWR cache (same pattern as
-  // every other hook here, e.g. useStaff's inviteStaff) instead of triggering
-  // a second round-trip revalidation fetch — the button updates instantly.
   const startWork = useCallback(async () => {
-    const created = await api.startWorkSession();
-    mutate((prev: any[] = []) => [created, ...prev], false);
-    return created;
+    try {
+      const created = await api.startWorkSession();
+      mutate(created, false);
+      return created;
+    } catch (err) {
+      // A 409 here means the server already considers a session open (our
+      // cache just hadn't caught up) — resync instead of leaving the button
+      // stuck showing "Start Work".
+      mutate();
+      throw err;
+    }
   }, [mutate]);
 
   const endWork = useCallback(async () => {
-    const ended = await api.endWorkSession();
-    mutate((prev: any[] = []) => prev.map((s) => (s.id === ended.id ? ended : s)), false);
-    return ended;
+    try {
+      const ended = await api.endWorkSession();
+      // Cache "no open session" (null), not the closed session record the
+      // server returns — that record is still a truthy object with endedAt
+      // set, so mySession (`data ?? null`) stayed truthy and the button kept
+      // showing "End Work" until a second click's 404 forced a refetch.
+      mutate(null, false);
+      return ended;
+    } catch (err) {
+      mutate();
+      throw err;
+    }
   }, [mutate]);
 
-  return { session: mySession, loading, error, startWork, endWork };
+  return { session: mySession, loading: isLoading, error: error?.message, startWork, endWork };
 }
 
 export function useCustomers() {

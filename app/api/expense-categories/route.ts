@@ -34,13 +34,15 @@ async function getCurrentStaff() {
   if (!user) return null;
   const { data } = await supabase()
     .from('staff')
-    .select('role, id')
+    .select('id, name, email, role')
     .eq('auth_uid', user.id)
     .single();
   return data;
 }
 
-async function requireAdmin() {
+// Returns the resolved staff record on success so callers can reuse it (e.g.
+// for logAudit) instead of re-resolving the same identity a second time.
+async function requireAdmin(): Promise<NextResponse | { id: string; name: string; email: string; role: string }> {
   const requester = await getCurrentStaff();
   if (!requester) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,7 +50,7 @@ async function requireAdmin() {
   if (requester.role !== 'Admin') {
     return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
   }
-  return null;
+  return requester;
 }
 
 export async function GET() {
@@ -66,8 +68,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const forbidden = await requireAdmin();
-    if (forbidden) return forbidden;
+    const admin = await requireAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { name, description } = await req.json();
     if (!name || !String(name).trim()) {
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'expense_category_created', { name });
+    logAudit(req, 'expense_category_created', { name }, admin);
     return NextResponse.json(mapCategory(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

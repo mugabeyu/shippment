@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       .select('*, category:categories(name)')
       .single();
     if (error) throw error;
-    logAudit(req, 'shipping_item_created', { id: data.id, categoryId, item, allerPrice, retourPrice });
+    logAudit(req, 'shipping_item_created', { id: data.id, categoryId, item, allerPrice, retourPrice }, gate.staff);
     return NextResponse.json(mapItem(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

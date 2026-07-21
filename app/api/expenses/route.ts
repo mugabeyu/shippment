@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
-    logAudit(req, 'expense_created', { category, amount, note });
+    logAudit(req, 'expense_created', { category, amount, note }, gate.staff);
     return NextResponse.json(mapExpense(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

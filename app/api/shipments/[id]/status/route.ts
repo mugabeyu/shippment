@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       trackingNumber: data.tracking_number,
       status,
       paymentStatus: data.payment_status
-    });
+    }, gate.staff);
     return NextResponse.json(mapShipment(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

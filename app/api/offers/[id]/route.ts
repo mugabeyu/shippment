@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'offer_updated', { id, name, active });
+    logAudit(req, 'offer_updated', { id, name, active }, gate.staff);
     return NextResponse.json(mapOffer(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -65,7 +65,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .delete()
       .eq('id', id);
     if (error) throw error;
-    logAudit(req, 'offer_deleted', { id });
+    logAudit(req, 'offer_deleted', { id }, gate.staff);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

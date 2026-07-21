@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       customerId,
       status,
       changes: Object.keys(body)
-    });
+    }, gate.staff);
 
     // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
     // table (sync_customer_total_kg), which recomputes both the old and new
@@ -125,7 +125,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       trackingNumber: shipment?.tracking_number,
       customerId: shipment?.customer_id,
       weightKg: shipment?.weight_kg
-    });
+    }, gate.staff);
 
     // customers.total_kg_sent is kept in sync by a DB trigger on the shipments
     // table (sync_customer_total_kg), so no manual decrement is needed here.

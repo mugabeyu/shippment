@@ -44,10 +44,20 @@ export async function getActingStaff(req: NextRequest) {
 /**
  * Records an audit log entry for an action performed through the app.
  * Failures are swallowed so audit logging never breaks the main operation.
+ *
+ * Pass `actingStaff` when the caller already resolved it (e.g. via
+ * getActingStaff/requireActiveWorkSession a moment earlier) — otherwise this
+ * re-resolves it from the request, which costs an extra auth + DB round trip
+ * on top of the one the caller already paid for.
  */
-export async function logAudit(req: NextRequest, action: string, details: Record<string, any> = {}) {
+export async function logAudit(
+  req: NextRequest,
+  action: string,
+  details: Record<string, any> = {},
+  actingStaff?: { id: string | null; name: string; email: string } | null
+) {
   try {
-    const staff = await getActingStaff(req);
+    const staff = actingStaff !== undefined ? actingStaff : await getActingStaff(req);
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||

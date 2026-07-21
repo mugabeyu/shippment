@@ -34,13 +34,15 @@ async function getCurrentStaff() {
   if (!user) return null;
   const { data } = await supabase()
     .from('staff')
-    .select('role, id')
+    .select('id, name, email, role')
     .eq('auth_uid', user.id)
     .single();
   return data;
 }
 
-async function requireAdmin() {
+// Returns the resolved staff record on success so callers can reuse it (e.g.
+// for logAudit) instead of re-resolving the same identity a second time.
+async function requireAdmin(): Promise<NextResponse | { id: string; name: string; email: string; role: string }> {
   const requester = await getCurrentStaff();
   if (!requester) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,7 +50,7 @@ async function requireAdmin() {
   if (requester.role !== 'Admin') {
     return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
   }
-  return null;
+  return requester;
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -68,8 +70,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireAdmin();
-    if (forbidden) return forbidden;
+    const admin = await requireAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     const { name, description } = await req.json();
@@ -83,7 +85,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'expense_category_updated', { id, name });
+    logAudit(req, 'expense_category_updated', { id, name }, admin);
     return NextResponse.json(mapCategory(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -92,8 +94,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireAdmin();
-    if (forbidden) return forbidden;
+    const admin = await requireAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     const { error } = await supabase()
@@ -101,7 +103,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .delete()
       .eq('id', id);
     if (error) throw error;
-    logAudit(req, 'expense_category_deleted', { id });
+    logAudit(req, 'expense_category_deleted', { id }, admin);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

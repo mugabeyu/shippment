@@ -92,7 +92,7 @@ export async function PUT(req: NextRequest) {
     }
 
     if (error) throw error;
-    logAudit(req, existing ? 'settings_updated' : 'settings_created', { companyName });
+    logAudit(req, existing ? 'settings_updated' : 'settings_created', { companyName }, gate.staff);
     return NextResponse.json({ ...data, paymentMethods: data.payment_methods });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

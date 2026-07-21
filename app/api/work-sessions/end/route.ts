@@ -15,25 +15,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: session } = await supabase()
-      .from('staff_work_sessions')
-      .select('id')
-      .eq('staff_id', staff.id)
-      .is('ended_at', null)
-      .maybeSingle();
-    if (!session) {
-      return NextResponse.json({ error: 'No work session in progress.' }, { status: 404 });
-    }
-
+    // Single conditional update instead of a SELECT to find the open session
+    // followed by an UPDATE by id — the WHERE clause (staff_id + ended_at IS
+    // NULL) already pins it to at most one row, so there's nothing the
+    // pre-check SELECT told us that this can't check itself.
     const { data, error } = await supabase()
       .from('staff_work_sessions')
       .update({ ended_at: new Date().toISOString() })
-      .eq('id', session.id)
+      .eq('staff_id', staff.id)
+      .is('ended_at', null)
       .select('*, staff:staff(name, email)')
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json({ error: 'No work session in progress.' }, { status: 404 });
+    }
 
-    logAudit(req, 'work_session_ended', { staffId: staff.id, sessionId: session.id });
+    logAudit(req, 'work_session_ended', { staffId: staff.id, sessionId: data.id }, staff);
     return NextResponse.json({
       id: data.id,
       staffId: data.staff_id,

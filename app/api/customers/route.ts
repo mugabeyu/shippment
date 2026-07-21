@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     if (error) throw error;
-    logAudit(req, 'customer_created', { id: data.id, name, phone, email });
+    logAudit(req, 'customer_created', { id: data.id, name, phone, email }, gate.staff);
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
     const { message, status } = friendlyDbError(error);

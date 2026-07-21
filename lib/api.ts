@@ -151,6 +151,7 @@ export const api = {
 
   // Work Sessions
   getWorkSessions: () => request<any[]>('/work-sessions'),
+  getMyWorkSession: () => request<any>('/work-sessions/mine'),
   startWorkSession: () => request<any>('/work-sessions', { method: 'POST' }),
   endWorkSession: () => request<any>('/work-sessions/end', { method: 'POST' }),
 };
