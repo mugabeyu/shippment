@@ -1,5 +1,4 @@
 'use client';
-
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShipments, useCustomers, useOffers, useSettings, useAppConfig, useExpenses, useShippingItems, useStaff } from '@/lib/swr';
@@ -21,7 +20,6 @@ import { calculateFinancials } from '@/lib/financials';
 function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
   const prev = useRef(0);
-
   useEffect(() => {
     const start = prev.current;
     const end = value;
@@ -38,7 +36,6 @@ function AnimatedCounter({ value, duration = 800 }: { value: number; duration?: 
     prev.current = value;
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-
   return <>{display.toLocaleString()}</>;
 }
 
@@ -55,20 +52,84 @@ export default function Dashboard() {
   const { config } = useAppConfig();
 
   const today = new Date().toISOString().split('T')[0];
+
+  // ============ DAILY CALCULATIONS ============
+  const todayShipments = useMemo(() =>
+    shipments.filter((s) => {
+      const d = new Date(s.date);
+      if (isNaN(d.getTime())) return false;
+      return d.toISOString().split('T')[0] === today;
+    }),
+    [shipments, today]
+  );
+
+  const todayExpenses = useMemo(() =>
+    expenses.filter((e: any) => {
+      if (!e.date) return false;
+      const d = new Date(e.date);
+      if (isNaN(d.getTime())) return false;
+      return d.toISOString().split('T')[0] === today;
+    }),
+    [expenses, today]
+  );
+
+  const todayNewCustomers = useMemo(() =>
+    customers.filter((c: any) => {
+      if (!c.registration_date) return false;
+      const d = new Date(c.registration_date);
+      if (isNaN(d.getTime())) return false;
+      return d.toISOString().split('T')[0] === today;
+    }),
+    [customers, today]
+  );
+
+  const todayNewStaff = useMemo(() =>
+    staff.filter((s: any) => {
+      if (!s.last_login) return false;
+      const d = new Date(s.last_login);
+      if (isNaN(d.getTime())) return false;
+      return d.toISOString().split('T')[0] === today;
+    }),
+    [staff, today]
+  );
+
+  const todayRevenue = useMemo(() =>
+    todayShipments.reduce((sum, s) => {
+      const amount = s.finalAmount ?? s.basePrice ?? (s.weightKg * (settings?.defaultRatePerKg || 0));
+      return sum + (s.paymentStatus === 'Paid' ? amount : (s.initialPayment || 0));
+    }, 0),
+    [todayShipments, settings]
+  );
+
+  const todayExpensesTotal = useMemo(() =>
+    todayExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0),
+    [todayExpenses]
+  );
+
+  const todayNetProfit = todayRevenue - todayExpensesTotal;
+  const todayPending = todayShipments.filter((s) => s.status !== 'Delivered' && s.status !== 'Cancelled').length;
+  const todayDelivered = todayShipments.filter((s) => s.status === 'Delivered').length;
+  const todayPaid = todayShipments.filter((s) => s.paymentStatus === 'Paid').length;
+  const todayKg = todayShipments.reduce((acc, curr) => acc + curr.weightKg, 0);
+  // ============ END DAILY CALCULATIONS ============
+
   const totalShipments = shipments.length;
   const pendingDeliveries = shipments.filter((s) => s.status !== 'Delivered' && s.status !== 'Cancelled').length;
   const delivered = shipments.filter((s) => s.status === 'Delivered').length;
   const totalKg = shipments.reduce((acc, curr) => acc + curr.weightKg, 0);
   const financials = useMemo(() => calculateFinancials(shipments, expenses, settings, config), [shipments, expenses, settings, config]);
   const paidShipments = shipments.filter((s) => s.paymentStatus === 'Paid').length;
+
   const activeOffer = offers.find((o) => o.active) ?? offers[0];
   const target = activeOffer?.targetKg ?? config?.defaults?.loyaltyTargetKg ?? 25;
+
   const topCustomers = [...customers].sort((a, b) => b.totalKgSent - a.totalKgSent).slice(0, 5);
   const loyaltyCalc = (c: any) => {
     const milestones = Math.floor(c.totalKgSent / target);
     return Math.max(0, c.totalKgSent - milestones * (target + (activeOffer?.rewardKg ?? 2)));
   };
   const closeToBonus = customers.map((c) => ({ ...c, remaining: target - loyaltyCalc(c) })).sort((a, b) => a.remaining - b.remaining).slice(0, 5);
+
   const monthly = useMemo(() => {
     const now = new Date();
     const buckets: { key: string; name: string; kg: number; revenue: number }[] = [];
@@ -150,6 +211,7 @@ export default function Dashboard() {
           trend={`${paidShipments} ${t('paid shipments')}`}
           trendUp
           delay="stagger-1"
+          today={`${t('Today')} ${todayRevenue.toLocaleString()} ${currency}`}
         />
         <KpiCard
           title={t('Total Expenses')}
@@ -159,6 +221,7 @@ export default function Dashboard() {
           accent="pink"
           trend={`${expenses.length} ${t('entries')}`}
           delay="stagger-2"
+          today={`${t('Today')} ${todayExpensesTotal.toLocaleString()} ${currency}`}
         />
         <KpiCard
           title={t('Net Profit')}
@@ -170,6 +233,7 @@ export default function Dashboard() {
           trendUp={financials.netProfit >= 0}
           delay="stagger-3"
           prefix={financials.netProfit < 0 ? '-' : ''}
+          today={`${t('Today')} ${todayNetProfit >= 0 ? '' : '-'}${Math.abs(todayNetProfit).toLocaleString()} ${currency}`}
         />
         <KpiCard
           title={t('Pending')}
@@ -180,6 +244,7 @@ export default function Dashboard() {
           trend={`${delivered} ${t('delivered')}`}
           delay="stagger-4"
           pulseDot
+          today={`${t('Today')} ${todayPending} ${t('pending')} • ${todayDelivered} ${t('delivered')}`}
         />
       </div>
 
@@ -189,21 +254,25 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Users className="w-4 h-4 text-cyan-400" /> {t('Total Customers')}</div>
           <div className="font-display text-3xl font-bold text-white">{totalCustomers}</div>
           <div className="text-sm text-white/25 mt-1">{activeCustomers} {t('active')}</div>
+          <div className="text-xs text-cyan-400/70 mt-1 font-medium">{t('Today')}: +{todayNewCustomers.length} {t('new')}</div>
         </button>
         <button onClick={() => router.push('/shipments')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
           <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Package className="w-4 h-4 text-pink-400" /> {t('Total Shipments')}</div>
           <div className="font-display text-3xl font-bold text-white">{totalShipments}</div>
           <div className="text-sm text-white/25 mt-1">{pendingDeliveries} {t('pending')}</div>
+          <div className="text-xs text-pink-400/70 mt-1 font-medium">{t('Today')}: {todayShipments.length} {t('shipments')} • {todayKg.toLocaleString()} kg</div>
         </button>
         <button onClick={() => router.push('/categories')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
           <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><Tag className="w-4 h-4 text-emerald-400" /> {t('Total Items')}</div>
           <div className="font-display text-3xl font-bold text-white">{totalItems}</div>
           <div className="text-sm text-white/25 mt-1">{t('shipping items')}</div>
+          <div className="text-xs text-emerald-400/70 mt-1 font-medium">{t('Today')}: {todayPaid} {t('paid')}</div>
         </button>
         <button onClick={() => router.push('/staff')} className="text-left card-glow p-4 hover:border-white/20 transition-colors">
           <div className="flex items-center gap-2 text-white/40 text-sm mb-2"><UserPlus className="w-4 h-4 text-amber-400" /> {t('Total Staff')}</div>
           <div className="font-display text-3xl font-bold text-white">{totalStaff}</div>
           <div className="text-sm text-white/25 mt-1">{activeStaff} {t('active')}</div>
+          <div className="text-xs text-amber-400/70 mt-1 font-medium">{t('Today')}: {todayNewStaff.length} {t('logged in')}</div>
         </button>
       </div>
 
@@ -243,7 +312,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-
         <div className="card-glow p-6 animate-fadeIn">
           <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Recent Activity')}</h2>
           <p className="text-sm text-white/25 mb-5">{t('Latest 5 shipments')}</p>
@@ -310,7 +378,6 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
-
         <div className="card-glow p-6">
           <h2 className="font-display text-xl text-white tracking-tight mb-1">{t('Next offer Progress')}</h2>
           <p className="text-sm text-white/25 mb-5">{t('Next')} {target}kg {t('bonus')}: {activeOffer?.rewardKg ?? 2}kg {t('free')}</p>
@@ -346,9 +413,9 @@ export default function Dashboard() {
   );
 }
 
-function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, trend, trendUp, delay, pulseDot }: {
+function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, trend, trendUp, delay, pulseDot, today }: {
   title: string; value: React.ReactNode; suffix?: string; prefix?: string;
-  icon: ComponentType<{ className?: string }>; accent: string; trend: string; trendUp?: boolean; delay?: string; pulseDot?: boolean;
+  icon: ComponentType<{ className?: string }>; accent: string; trend: string; trendUp?: boolean; delay?: string; pulseDot?: boolean; today?: string;
 }) {
   const glowMap: Record<string, string> = {
     cyan: 'glow-cyan', pink: 'glow-pink', green: 'glow-green', amber: 'glow-amber'
@@ -359,6 +426,9 @@ function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, t
   };
   const iconColorMap: Record<string, string> = {
     cyan: 'text-cyan-400', pink: 'text-pink-400', green: 'text-emerald-400', amber: 'text-amber-400'
+  };
+  const todayColorMap: Record<string, string> = {
+    cyan: 'text-cyan-400/70', pink: 'text-pink-400/70', green: 'text-emerald-400/70', amber: 'text-amber-400/70'
   };
 
   return (
@@ -379,6 +449,11 @@ function KpiCard({ title, value, suffix = '', prefix = '', icon: Icon, accent, t
       <div className="font-display text-4xl font-bold text-white tracking-tight mb-1">
         {prefix}<>{value}</>{suffix}
       </div>
+      {today && (
+        <div className={`text-xs font-medium mb-1 ${todayColorMap[accent] || 'text-white/40'}`}>
+          {today}
+        </div>
+      )}
       <div className={`flex items-center text-sm ${trendUp ? 'text-emerald-400' : trend.includes('Loss') || trend.includes('Perte') || trend.includes('entries') || trend.includes('entrées') ? 'text-pink-400' : 'text-white/25'}`}>
         {trendUp && <ArrowUpRight className="w-4 h-4 mr-1" />}
         {!trendUp && (trend.includes('Loss') || trend.includes('Perte')) && <ArrowDownRight className="w-4 h-4 mr-1" />}
